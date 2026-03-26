@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-border: var(--border-subtle);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--fire-gold);
+
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-geist-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* ── Surfaces (warm dark) ── */
+  --bg-base:      #080706;
+  --bg-surface:   #111009;
+  --bg-elevated:  #1a1710;
+  --border-subtle: #2a2318;
+  --border-muted:  #3d3220;
+
+  /* ── Text ── */
+  --text-primary:   #f5efe8;
+  --text-secondary: #b8a898;
+  --text-muted:     #6b5e50;
+
+  /* ── Fire palette (from logo) ── */
+  --fire-red:      #C41A00;
+  --fire-orange:   #E8560A;
+  --fire-amber:    #D4960A;
+  --fire-gold:     #F0B830;
+  --fire-gold-dim: #8a6020;
+  --ember:         #FF6B00;
+
+  /* ── WoW Class colors (unchanged) ── */
+  --class-death-knight: #C41E3A;
+  --class-demon-hunter: #A330C9;
+  --class-druid:        #FF7C0A;
+  --class-evoker:       #33937F;
+  --class-hunter:       #AAD372;
+  --class-mage:         #3FC7EB;
+  --class-monk:         #00FF98;
+  --class-paladin:      #F48CBA;
+  --class-priest:       #FFFFFF;
+  --class-rogue:        #FFF468;
+  --class-shaman:       #0070DD;
+  --class-warlock:      #8788EE;
+  --class-warrior:      #C69B3A;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Fire gradient utility ── */
+.fire-gradient {
+  background: linear-gradient(135deg, var(--fire-red), var(--fire-orange), var(--fire-gold));
+}
+.fire-text {
+  background: linear-gradient(90deg, var(--fire-orange), var(--fire-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Ember glow effect ── */
+.ember-glow {
+  box-shadow: 0 0 20px rgba(232, 86, 10, 0.15), 0 0 40px rgba(232, 86, 10, 0.05);
+}
+.ember-glow-strong {
+  box-shadow: 0 0 30px rgba(232, 86, 10, 0.3), 0 0 60px rgba(212, 150, 10, 0.1);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--bg-base); }
+::-webkit-scrollbar-thumb  { background: var(--border-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a4830; }
+
+/* ── Selection ── */
+::selection { background: rgba(232, 86, 10, 0.25); color: var(--text-primary); }
+
+/* ── Animated embers (hero background) ── */
+@keyframes float-up {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.8; }
+  50%  { transform: translateY(-60px) translateX(10px) scale(0.8); opacity: 0.5; }
+  100% { transform: translateY(-120px) translateX(-5px) scale(0.4); opacity: 0; }
+}
+.ember-particle {
+  animation: float-up linear infinite;
 }
