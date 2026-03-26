@@ -31,6 +31,7 @@ export const metadata: Metadata = {
   description:
     "Mythic raiding guild on Ragnaros US. Command center for roster, recruitment, and progression tracking.",
   keywords: ["World of Warcraft", "WoW guild", "Mythic raiding", "The Burning Seagull", "Ragnaros US"],
+  icons: { icon: "/logo.png" },
   openGraph: {
     title: "The Burning Seagull",
     description: "Mythic raiding guild — Ragnaros US",

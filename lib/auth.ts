@@ -13,13 +13,57 @@ export const authOptions: NextAuthOptions = {
         url: `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/authorize`,
         params: { scope: "openid wow.profile" },
       },
-      token: `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/token`,
-      userinfo: `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/userinfo`,
+      token: {
+        url: `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/token`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async request({ provider, params }: any) {
+          const creds = Buffer.from(`${provider.clientId}:${provider.clientSecret}`).toString("base64");
+          const res = await fetch(`https://${process.env.BLIZZARD_REGION}.battle.net/oauth/token`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Basic ${creds}`,
+            },
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              code: params.code ?? "",
+              redirect_uri: provider.callbackUrl,
+            }),
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("[auth] token HTTP error:", res.status, text);
+            throw new Error(`token exchange failed: ${res.status}`);
+          }
+          const tokens = await res.json();
+          console.log("[auth] token OK, scope:", tokens.scope);
+          return { tokens };
+        },
+      },
+      userinfo: {
+        url: `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/userinfo`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async request({ tokens }: any) {
+          const res = await fetch(
+            `https://${process.env.BLIZZARD_REGION}.battle.net/oauth/userinfo`,
+            { headers: { Authorization: `Bearer ${tokens.access_token}` } }
+          );
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("[auth] userinfo HTTP error:", res.status, text);
+            throw new Error(`userinfo ${res.status}`);
+          }
+          const data = await res.json();
+          console.log("[auth] userinfo OK:", JSON.stringify(data));
+          return data;
+        },
+      },
+      checks: ["state"],
       clientId: process.env.BLIZZARD_CLIENT_ID!,
       clientSecret: process.env.BLIZZARD_CLIENT_SECRET!,
       profile(profile) {
         return {
-          id: String(profile.id ?? profile.sub),
+          id: String(profile.sub),
           name: profile.battletag,
           email: null,
           image: null,
@@ -43,15 +87,18 @@ export const authOptions: NextAuthOptions = {
           .maybeSingle();
 
         if (!existing) {
+          // Use a proper UUID — Battle.net IDs are numeric, not UUIDs
+          const { randomUUID } = await import("crypto");
           await adminClient.from("profiles").insert({
-            id: user.id,
+            id: randomUUID(),
             battle_tag: battleTag,
             guild_rank: null,
             main_char_name: null,
             avatar_url: null,
           });
         }
-      } catch {
+      } catch (err) {
+        console.error("[auth] signIn Supabase error:", err);
         // Non-blocking — allow sign in even if DB write fails
       }
       return true;
@@ -62,18 +109,18 @@ export const authOptions: NextAuthOptions = {
         token.battleTag = (user as { battleTag?: string }).battleTag ?? user.name;
         token.sub = user.id;
       }
-      // Fetch guild rank on each token refresh
-      if (token.sub) {
+      // Fetch guild rank by battle_tag (not by id — bnet id is numeric, not uuid)
+      if (token.battleTag) {
         try {
           const adminClient = createAdminClient();
           const { data: profile } = await adminClient
             .from("profiles")
             .select("guild_rank")
-            .eq("id", token.sub)
+            .eq("battle_tag", token.battleTag as string)
             .maybeSingle();
           token.guildRank = profile?.guild_rank ?? null;
-        } catch {
-          // keep existing rank
+        } catch (err) {
+          console.error("[auth] jwt Supabase error:", err);
         }
       }
       return token;
@@ -93,7 +140,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/",
-    error: "/",
   },
 };
 

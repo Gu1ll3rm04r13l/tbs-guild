@@ -40,11 +40,27 @@ export type Profile = {
 export type Application = {
   id: string;
   char_name: string;
+  realm: string | null;
   class: string;
   spec: string;
+  spec_secondary: string | null;
+  past_progression: string | null;
   rio_link: string | null;
   logs_link: string | null;
+  stream_link: string | null;
   ui_screenshot_url: string | null;
+  alt_class_availability: string | null;
+  why_tbs: string | null;
+  how_found: string | null;
+  guild_history: string | null;
+  why_leaving: string | null;
+  had_important_position: string | null;
+  know_someone: string | null;
+  applicant_battle_tag: string | null;
+  discord_id: string | null;
+  country: string | null;
+  extra_info: string | null;
+  ragnaros_alt: string | null;
   status: "pending" | "accepted" | "rejected";
   created_at: string;
   notes?: string | null;

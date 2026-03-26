@@ -3,9 +3,13 @@ import { createAdminClient } from "@/lib/supabase";
 import { notifyNewApplication } from "@/lib/discord";
 import type { Application } from "@/lib/supabase";
 
-const URL_PATTERN = /^https?:\/\/.+/;
-const RIO_PATTERN = /raider\.io\/characters/i;
+const RIO_PATTERN = /raider\.io/i;
 const LOGS_PATTERN = /warcraftlogs\.com/i;
+const URL_PATTERN = /^https?:\/\/.+/;
+
+function str(v: unknown): string | null {
+  return v && typeof v === "string" && v.trim() ? v.trim() : null;
+}
 
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -15,41 +19,72 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { char_name, class: charClass, spec, rio_link, logs_link, ui_screenshot_url } = body;
+  const charName = str(body.char_name);
+  const realm = str(body.realm);
+  const charClass = str(body.class);
+  const spec = str(body.spec);
+  const pastProgression = str(body.past_progression);
+  const whyTbs = str(body.why_tbs);
+  const howFound = str(body.how_found);
+  const guildHistory = str(body.guild_history);
+  const whyLeaving = str(body.why_leaving);
+  const hadImportantPosition = str(body.had_important_position);
+  const knowSomeone = str(body.know_someone);
+  const applicantBattleTag = str(body.applicant_battle_tag);
+  const discordId = str(body.discord_id);
+  const rioLink = str(body.rio_link);
+  const logsLink = str(body.logs_link);
+  const uiUrl = str(body.ui_screenshot_url);
+  const streamLink = str(body.stream_link);
 
-  // Validation
-  if (!char_name || typeof char_name !== "string" || char_name.trim().length < 2) {
-    return Response.json({ error: "Character name is required" }, { status: 422 });
+  // Required field validation
+  const missing = [
+    !charName && "char_name",
+    !realm && "realm",
+    !charClass && "class",
+    !spec && "spec",
+    !pastProgression && "past_progression",
+    !whyTbs && "why_tbs",
+    !howFound && "how_found",
+    !guildHistory && "guild_history",
+    !whyLeaving && "why_leaving",
+    !hadImportantPosition && "had_important_position",
+    !knowSomeone && "know_someone",
+    !applicantBattleTag && "applicant_battle_tag",
+    !discordId && "discord_id",
+  ].filter(Boolean);
+
+  if (missing.length) {
+    return Response.json({ error: `Missing required fields: ${missing.join(", ")}` }, { status: 422 });
   }
-  if (!charClass || typeof charClass !== "string") {
-    return Response.json({ error: "Class is required" }, { status: 422 });
+
+  // URL validation
+  if (rioLink && !RIO_PATTERN.test(rioLink)) {
+    return Response.json({ error: "El link de Raider.io debe ser una URL de raider.io válida." }, { status: 422 });
   }
-  if (!spec || typeof spec !== "string") {
-    return Response.json({ error: "Spec is required" }, { status: 422 });
+  if (logsLink && !LOGS_PATTERN.test(logsLink)) {
+    return Response.json({ error: "El link de Warcraft Logs debe ser una URL de warcraftlogs.com válida." }, { status: 422 });
   }
-  if (rio_link && !RIO_PATTERN.test(String(rio_link))) {
-    return Response.json({ error: "Rio link must be a valid raider.io URL" }, { status: 422 });
+  if (uiUrl && !URL_PATTERN.test(uiUrl)) {
+    return Response.json({ error: "El link de la captura de pantalla debe ser una URL válida." }, { status: 422 });
   }
-  if (logs_link && !LOGS_PATTERN.test(String(logs_link))) {
-    return Response.json({ error: "Logs link must be a valid warcraftlogs.com URL" }, { status: 422 });
-  }
-  if (ui_screenshot_url && !URL_PATTERN.test(String(ui_screenshot_url))) {
-    return Response.json({ error: "UI screenshot must be a valid URL" }, { status: 422 });
+  if (streamLink && !URL_PATTERN.test(streamLink)) {
+    return Response.json({ error: "El link de stream debe ser una URL válida." }, { status: 422 });
   }
 
   const adminClient = createAdminClient();
 
-  // Check for duplicate pending application from same character
+  // Check for duplicate pending application
   const { data: existing } = await adminClient
     .from("applications")
     .select("id")
-    .eq("char_name", String(char_name).trim())
+    .eq("char_name", charName!)
     .eq("status", "pending")
     .maybeSingle();
 
   if (existing) {
     return Response.json(
-      { error: "There is already a pending application for this character" },
+      { error: "Ya existe un apply pendiente para este personaje." },
       { status: 409 }
     );
   }
@@ -57,22 +92,38 @@ export async function POST(request: NextRequest) {
   const { data, error } = await adminClient
     .from("applications")
     .insert({
-      char_name: String(char_name).trim(),
+      char_name: charName,
+      realm,
       class: charClass,
       spec,
-      rio_link: rio_link ?? null,
-      logs_link: logs_link ?? null,
-      ui_screenshot_url: ui_screenshot_url ?? null,
+      spec_secondary: str(body.spec_secondary),
+      past_progression: pastProgression,
+      rio_link: rioLink,
+      logs_link: logsLink,
+      stream_link: streamLink,
+      ui_screenshot_url: uiUrl,
+      alt_class_availability: str(body.alt_class_availability),
+      why_tbs: whyTbs,
+      how_found: howFound,
+      guild_history: guildHistory,
+      why_leaving: whyLeaving,
+      had_important_position: hadImportantPosition,
+      know_someone: knowSomeone,
+      applicant_battle_tag: applicantBattleTag,
+      discord_id: discordId,
+      country: str(body.country),
+      extra_info: str(body.extra_info),
+      ragnaros_alt: str(body.ragnaros_alt),
       status: "pending",
     })
     .select()
     .single();
 
   if (error) {
+    console.error("[applications] insert error:", error);
     return Response.json({ error: "Failed to save application" }, { status: 500 });
   }
 
-  // Fire-and-forget Discord notification
   notifyNewApplication(data as Application);
 
   return Response.json({ success: true, id: data.id }, { status: 201 });

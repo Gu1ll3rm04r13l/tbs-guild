@@ -25,16 +25,31 @@ export async function notifyNewApplication(app: Application): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
   if (!webhookUrl) return;
 
-  const fields = [
-    { name: "Class / Spec", value: `${app.class} — ${app.spec}`, inline: true },
-    { name: "Status", value: "🟡 Pending Review", inline: true },
+  const specLabel = app.spec_secondary ? `${app.spec} *(+ ${app.spec_secondary})*` : app.spec;
+  const fields: { name: string; value: string; inline: boolean }[] = [
+    { name: "Clase / Spec", value: `${app.class} — ${specLabel}`, inline: true },
+    { name: "Realm", value: app.realm ?? "—", inline: true },
+    { name: "Status", value: "🟡 Pendiente", inline: true },
   ];
-
-  if (app.rio_link) fields.push({ name: "Raider.io", value: app.rio_link, inline: false });
-  if (app.logs_link) fields.push({ name: "WarcraftLogs", value: app.logs_link, inline: false });
+  if (app.applicant_battle_tag)
+    fields.push({ name: "Battletag", value: app.applicant_battle_tag, inline: true });
+  if (app.discord_id)
+    fields.push({ name: "Discord", value: app.discord_id, inline: true });
+  if (app.country)
+    fields.push({ name: "País", value: app.country, inline: true });
+  if (app.rio_link)
+    fields.push({ name: "Raider.io", value: app.rio_link, inline: false });
+  if (app.logs_link)
+    fields.push({ name: "WarcraftLogs", value: app.logs_link, inline: false });
+  if (app.past_progression)
+    fields.push({ name: "Progresión pasada", value: app.past_progression.slice(0, 300), inline: false });
+  if (app.why_tbs)
+    fields.push({ name: "¿Por qué TBS?", value: app.why_tbs.slice(0, 300), inline: false });
+  if (app.guild_history)
+    fields.push({ name: "Guilds anteriores", value: app.guild_history.slice(0, 300), inline: false });
 
   const embed = {
-    title: `📋 New Application — ${app.char_name}`,
+    title: `📋 Nuevo Apply — ${app.char_name}`,
     color: getEmbedColor(app.class),
     fields,
     footer: { text: "The Burning Seagull — Recruitment" },

@@ -100,38 +100,70 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
         {/* ── Auth ── */}
         <div className="flex items-center gap-3">
           {status === "loading" ? (
-            <div className="h-8 w-28 rounded bg-[#1a1710] animate-pulse" />
+            <div className="h-8 w-8 rounded-full bg-[#1a1710] animate-pulse" />
           ) : session ? (
             <div className="relative">
               <button
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 rounded border border-[#3d3220] bg-[#111009] px-3 py-1.5 text-sm text-[#f5efe8] hover:border-[#5a4830] transition-colors"
+                className="flex items-center gap-2 group"
+                aria-label="Profile menu"
               >
-                <User className="h-3.5 w-3.5 text-[#6b5e50]" />
-                <span className="max-w-[120px] truncate text-xs">{battleTag}</span>
-                <ChevronDown className={cn("h-3 w-3 text-[#6b5e50] transition-transform", profileOpen && "rotate-180")} />
+                {/* Avatar circle */}
+                <div className="relative h-8 w-8 rounded-full border border-[#E8560A]/40 bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-xs font-bold text-[#E8560A] transition-all group-hover:border-[#E8560A]/80 group-hover:shadow-[0_0_10px_rgba(232,86,10,0.3)]">
+                  {battleTag ? battleTag.charAt(0).toUpperCase() : <User className="h-3.5 w-3.5" />}
+                </div>
+                <ChevronDown className={cn("h-3 w-3 text-[#6b5e50] transition-transform hidden sm:block", profileOpen && "rotate-180")} />
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-1 w-48 rounded border border-[#2a2318] bg-[#111009] shadow-xl shadow-black/60 py-1 z-50">
-                  {isOfficer && (
-                    <Link
-                      href="/dashboard"
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8]"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <LayoutDashboard className="h-3.5 w-3.5" />
-                      Officer Dashboard
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { signOut(); setProfileOpen(false); }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8]"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Sign out
-                  </button>
-                </div>
+                <>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-56 rounded-lg border border-[#2a2318] bg-[#0e0c09] shadow-2xl shadow-black/80 z-50 overflow-hidden">
+                    {/* Header del perfil */}
+                    <div className="px-4 py-3 border-b border-[#1e1a13]">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full border border-[#E8560A]/50 bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-sm font-bold text-[#E8560A]">
+                          {battleTag ? battleTag.charAt(0).toUpperCase() : "?"}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#f5efe8] truncate">
+                            {battleTag?.split("#")[0]}
+                          </p>
+                          <p className="text-[10px] text-[#6b5e50] font-mono truncate">
+                            #{battleTag?.split("#")[1]}
+                          </p>
+                          {(session.user as { guildRank?: string | null }).guildRank && (
+                            <span className="inline-block mt-0.5 text-[9px] font-mono uppercase tracking-wider text-[#E8560A] bg-[#E8560A]/10 border border-[#E8560A]/20 rounded px-1.5 py-0.5">
+                              {(session.user as { guildRank?: string | null }).guildRank}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Links */}
+                    <div className="py-1">
+                      {isOfficer && (
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <LayoutDashboard className="h-3.5 w-3.5 text-[#E8560A]" />
+                          Officer Dashboard
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => { signOut(); setProfileOpen(false); }}
+                        className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
+                      >
+                        <LogOut className="h-3.5 w-3.5 text-[#6b5e50]" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           ) : (
