@@ -40,3 +40,25 @@ export async function PATCH(
 
   return Response.json({ success: true });
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  const guildRank = (session?.user as { guildRank?: string | null })?.guildRank;
+
+  if (!session || !OFFICER_RANKS.includes(guildRank ?? "")) {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("applications").delete().eq("id", id);
+
+  if (error) {
+    return Response.json({ error: "Delete failed" }, { status: 500 });
+  }
+
+  return Response.json({ success: true });
+}

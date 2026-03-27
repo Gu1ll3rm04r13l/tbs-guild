@@ -16,18 +16,26 @@ export function DashboardClient({ initialApplications }: DashboardClientProps) {
 
   async function handleStatusChange(
     id: string,
-    status: "accepted" | "rejected" | "pending"
+    status: "accepted" | "rejected" | "pending",
+    notes?: string
   ) {
     const res = await fetch(`/api/applications/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, notes: notes ?? null }),
     });
 
     if (res.ok) {
       setApplications((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status } : a))
+        prev.map((a) => (a.id === id ? { ...a, status, notes: notes ?? a.notes } : a))
       );
+    }
+  }
+
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/applications/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setApplications((prev) => prev.filter((a) => a.id !== id));
     }
   }
 
@@ -35,14 +43,33 @@ export function DashboardClient({ initialApplications }: DashboardClientProps) {
     filter === "all" ? applications : applications.filter((a) => a.status === filter);
 
   const filterOptions: { label: string; value: StatusFilter }[] = [
-    { label: "All", value: "all" },
-    { label: "Pending", value: "pending" },
-    { label: "Accepted", value: "accepted" },
-    { label: "Rejected", value: "rejected" },
+    { label: "Todos",      value: "all" },
+    { label: "Pendiente",  value: "pending" },
+    { label: "Aceptado",   value: "accepted" },
+    { label: "Rechazado",  value: "rejected" },
   ];
+
+  const pending  = applications.filter((a) => a.status === "pending").length;
+  const accepted = applications.filter((a) => a.status === "accepted").length;
+  const rejected = applications.filter((a) => a.status === "rejected").length;
 
   return (
     <div className="space-y-4">
+      {/* Live stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total",      value: applications.length, color: "text-[#f5f5f5]" },
+          { label: "Pendiente",  value: pending,             color: "text-amber-400" },
+          { label: "Aceptado",   value: accepted,            color: "text-green-400" },
+          { label: "Rechazado",  value: rejected,            color: "text-red-400"   },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-[#262626] bg-[#161616] p-4 text-center">
+            <p className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-1 rounded-lg border border-[#262626] bg-[#161616] p-1 w-fit">
         {filterOptions.map((opt) => (
@@ -70,13 +97,14 @@ export function DashboardClient({ initialApplications }: DashboardClientProps) {
       {/* List */}
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <p className="text-center text-sm text-[#6b7280] py-8">No applications in this category.</p>
+          <p className="text-center text-sm text-[#6b7280] py-8">No hay postulaciones en esta categoría.</p>
         ) : (
           filtered.map((app) => (
             <ApplicantRow
               key={app.id}
               application={app}
               onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
             />
           ))
         )}
