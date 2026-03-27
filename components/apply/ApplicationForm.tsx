@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +14,8 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Sword } from "lucide-react";
+import type { WowCharacterSummary } from "@/app/api/blizzard/my-characters/route";
 
 const WOW_CLASSES: Record<string, string[]> = {
   "Death Knight": ["Blood", "Frost", "Unholy"],
@@ -108,10 +110,72 @@ function Field({
   );
 }
 
+const REGION = process.env.NEXT_PUBLIC_BLIZZARD_REGION ?? "eu";
+
 export function ApplicationForm() {
+  const { data: session } = useSession();
   const [form, setForm] = useState<FormData>(INITIAL);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Character picker state
+  const [chars, setChars] = useState<WowCharacterSummary[]>([]);
+  const [charsLoading, setCharsLoading] = useState(false);
+  const [imported, setImported] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    async function load() {
+      setCharsLoading(true);
+      try {
+        const r = await fetch("/api/blizzard/my-characters");
+        if (r.ok) {
+          const data: WowCharacterSummary[] = await r.json();
+          setChars(data);
+        }
+      } catch {
+        // silencioso — el form funciona igual sin el picker
+      } finally {
+        setCharsLoading(false);
+      }
+    }
+    load();
+  }, [session]);
+
+  async function handleCharSelect(value: string) {
+    const char = chars.find((c) => `${c.name}@${c.realmSlug}` === value);
+    if (!char) return;
+
+    const battleTag = (session?.user as { battleTag?: string })?.battleTag ?? "";
+    const realmSlug = char.realmSlug;
+    const nameLower = char.name.toLowerCase();
+
+    setForm((prev) => ({
+      ...prev,
+      charName: char.name,
+      realm: char.realm,
+      charClass: char.charClass,
+      spec: "",
+      rioLink: `https://raider.io/characters/${REGION}/${realmSlug}/${nameLower}`,
+      logsLink: `https://www.warcraftlogs.com/character/${REGION}/${realmSlug}/${nameLower}`,
+      applicantBattleTag: prev.applicantBattleTag || battleTag,
+    }));
+    setImported(true);
+
+    // Fetch spec via existing route (client credentials, no user token needed)
+    try {
+      const r = await fetch(`/api/blizzard/character?realm=${realmSlug}&name=${nameLower}`);
+      if (r.ok) {
+        const data = await r.json();
+        const spec: string | undefined = data.profile?.active_spec?.name;
+        if (spec) {
+          setForm((prev) => ({ ...prev, spec }));
+        }
+      }
+    } catch {
+      // spec queda vacía, el usuario la selecciona manualmente
+    }
+  }
 
   const availableSpecs = form.charClass ? WOW_CLASSES[form.charClass] ?? [] : [];
 
@@ -197,7 +261,7 @@ export function ApplicationForm() {
         <div>
           <h3 className="text-xl font-bold text-[#f5efe8]">¡Apply enviado!</h3>
           <p className="text-sm text-[#b8a898] max-w-sm mt-2">
-            Lo revisamos y te contactamos por Discord. Asegurate de estar en el servidor de TBS.
+            Lo revisamos y nos ponemos en contacto por Discord, Battle.net o correo en juego.
           </p>
         </div>
       </div>
@@ -206,6 +270,38 @@ export function ApplicationForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* ── Importar desde Battle.net (solo si hay sesión) ── */}
+      {session && (
+        <div className="rounded-lg border border-[#3d3220] bg-[#0f0d08] px-4 py-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Sword className="h-3.5 w-3.5 text-[#F0B830]" />
+            <span className="text-xs font-medium text-[#F0B830]">Importar personaje desde Battle.net</span>
+            {charsLoading && <Loader2 className="h-3 w-3 animate-spin text-[#6b5e50]" />}
+          </div>
+          {!charsLoading && chars.length > 0 && (
+            <Select onValueChange={handleCharSelect}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Elegí un personaje…" />
+              </SelectTrigger>
+              <SelectContent>
+                {chars.map((c) => (
+                  <SelectItem key={`${c.name}@${c.realmSlug}`} value={`${c.name}@${c.realmSlug}`}>
+                    <span>{c.name}</span>
+                    <span className="ml-2 text-[#6b7280]">— {c.charClass} · {c.realm} · Nv {c.level}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {!charsLoading && chars.length === 0 && (
+            <p className="text-xs text-[#6b5e50]">No se encontraron personajes. Completá el formulario manualmente.</p>
+          )}
+          {imported && (
+            <p className="text-xs text-green-500">✓ Datos importados. Revisá y completá los campos faltantes.</p>
+          )}
+        </div>
+      )}
 
       {/* ── Tu personaje ── */}
       <SectionHeader label="Tu personaje" />
