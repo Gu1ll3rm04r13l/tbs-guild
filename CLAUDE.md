@@ -19,8 +19,8 @@ Plataforma web para la hermandad de WoW **The Burning Seagull** (Mítico/Semi-Tr
 
 - **Seguridad API**: El `BLIZZARD_CLIENT_SECRET` nunca llega al cliente. Toda llamada a Blizzard va por Server Components o Route Handlers (`/app/api/`).
 - **ISR**: El Roster usa `revalidate = 3600` (60 min). No fetch en cada request.
-- **Auth Guard**: La ruta `/dashboard` (Officer Dashboard) requiere `guild_rank` de oficiales. Redirigir a `/` si no autorizado.
-- **Discord Webhook**: Al insertar en `applications`, disparar webhook a Discord. Implementar en la Route Handler o Supabase Edge Function, nunca en el cliente.
+- **Auth Guard**: La ruta `/dashboard` (Officer Dashboard) requiere `guild_rank` de oficial. Los ranks con acceso son `["guildmaster", "officer", "class-lead"]` (ver `lib/auth.ts`). No existe `middleware.ts` — el guard lo hace el Server Component con redirect a `/`.
+- **Discord Webhook**: Al insertar en `applications`, disparar webhook a Discord. Implementado en `/api/applications/route.ts` vía `notifyNewApplication()` de `lib/discord.ts`. Nunca en el cliente.
 - **Error Handling**: Si la API de Blizzard falla, mostrar estado de error elegante con datos en caché; nunca romper la UI.
 
 ## Esquema de Base de Datos (Supabase)
@@ -60,43 +60,68 @@ raid_progress (
 
 ## Design Tokens
 
-```
---bg-base:       #0a0a0a   (Rich Black — fondo principal)
---bg-surface:    #161616   (tarjetas)
---border:        #262626   (bordes sutiles)
---text-primary:  #f5f5f5
---text-muted:    #6b7280
+```css
+/* Surfaces — warm dark (definidos en app/globals.css) */
+--bg-base:       #080706   /* fondo principal */
+--bg-surface:    #111009   /* tarjetas */
+--bg-elevated:   #1a1710   /* modales, dropdowns */
+--border-subtle: #2a2318   /* bordes */
+--border-muted:  #3d3220
+
+/* Texto */
+--text-primary:   #f5efe8
+--text-secondary: #b8a898
+--text-muted:     #6b5e50
+
+/* Fire palette — acento del logo */
+--fire-red:    #C41A00
+--fire-orange: #E8560A
+--fire-amber:  #D4960A
+--fire-gold:   #F0B830   /* ← color de acento principal (--color-accent) */
+--ember:       #FF6B00
 
 Fuentes:
-  - Inter         → cuerpo / lectura técnica
-  - Geist Mono    → números, stats, código
+  - Inter / Geist Sans → cuerpo / lectura técnica
+  - Geist Mono         → números, stats, código
 
-Colores de clase WoW (solo en nombres / barras):
-  Death Knight #C41E3A | Mage #3FC7EB | Paladin #F48CBA
-  Warrior #C69B3A      | Hunter #AAD372 | Rogue #FFF468
-  Priest #FFFFFF       | Shaman #0070DD | Druid #FF7C0A
-  Monk #00FF98         | Demon Hunter #A330C9 | Warlock #8788EE
-  Evoker #33937F
+Clases utilitarias CSS (globals.css):
+  .fire-gradient   → gradiente rojo→naranja→dorado (backgrounds)
+  .fire-text       → texto con background-clip gradient
+  .ember-glow      → box-shadow naranja suave (tarjetas activas)
+  .ember-glow-strong → box-shadow naranja intenso
+
+Colores de clase WoW — variables CSS (solo nombres / barras):
+  --class-death-knight: #C41E3A  | --class-mage:          #3FC7EB
+  --class-paladin:      #F48CBA  | --class-warrior:        #C69B3A
+  --class-hunter:       #AAD372  | --class-rogue:          #FFF468
+  --class-priest:       #FFFFFF  | --class-shaman:         #0070DD
+  --class-druid:        #FF7C0A  | --class-monk:           #00FF98
+  --class-demon-hunter: #A330C9  | --class-warlock:        #8788EE
+  --class-evoker:       #33937F
 ```
 
 ## Layout de Secciones
 
 1. **Sticky Navbar** — Logo, progreso rápido (`X/8 M`), links (Roster, Apply, Logs), Profile Dropdown (Login con Battle.net).
-2. **Hero Status** — Widget de progreso visual: barra porcentual + iconos de jefes derrotados/pendientes.
-3. **Dynamic Roster** — Grid de tarjetas. Hover revela ilvl y M+ score desde la API de Blizzard. En mobile: lista simplificada.
-4. **Recruitment Hub** (público) — Formulario de postulación con validación de URLs (Raider.io / WarcraftLogs).
-5. **Officer Dashboard** (privado, `/dashboard`) — Lista de aspirantes, botones Aceptar/Rechazar, comentarios internos.
+2. **Hero Status** — Widget de progreso visual: barra porcentual + iconos de jefes derrotados/pendientes. Datos de `raid_progress` en Supabase (entrada manual).
+3. **Dynamic Roster** — Grid de tarjetas con ISR 1h. Stats (ilvl, spec) desde la API de Blizzard. **M+ score no es fetched en vivo** — el link a Raider.io se recoge en el formulario de postulación, no en el roster. En mobile: lista simplificada.
+4. **Recruitment Hub** (público) — Formulario de postulación con validación de URLs (Raider.io / WarcraftLogs). Al enviar, se dispara el webhook de Discord automáticamente.
+5. **Officer Dashboard** (privado, `/dashboard`) — Lista de aspirantes filtrable por estado, botones Aceptar/Rechazar, notas internas. Usa `force-dynamic`.
 
 ## Estructura de Carpetas
 
 ```
 /app
-  /api              → Route Handlers (Blizzard proxy, Discord webhook)
-  /apply            → Formulario público de postulación
-  /dashboard        → Panel privado de oficiales (auth guard)
-  /roster           → Vista pública del roster (ISR)
+  /api
+    /applications         → POST (crear + Discord webhook), PATCH /:id (solo oficiales)
+    /auth/[...nextauth]   → Handler NextAuth
+    /blizzard/character   → Proxy: getCharacterProfile + getCharacterMedia en paralelo
+  /apply                  → Formulario público de postulación
+  /dashboard              → Panel privado de oficiales (auth guard, force-dynamic)
+  /roster                 → Vista pública del roster (ISR revalidate=3600)
+  globals.css             → Variables CSS + Tailwind v4 theme override
   layout.tsx
-  page.tsx          → Hero + Status widget
+  page.tsx                → Hero + Status widget
 
 /components
   /ui               → Shadcn/ui base components
@@ -104,22 +129,24 @@ Colores de clase WoW (solo en nombres / barras):
   /progress         → RaidProgressBar, BossIcon
   /apply            → ApplicationForm
   /dashboard        → ApplicantRow, StatusBadge
+  Navbar.tsx        → Con Profile Dropdown y auth state
+  SessionProvider.tsx → NextAuth wrapper (client component)
 
 /lib
-  blizzard.ts       → Fetch helpers para Game Data & Profile API
-  supabase.ts       → Cliente Supabase (server y browser)
-  auth.ts           → Configuración NextAuth + BattleNet provider
-  discord.ts        → Webhook helper
-
-/styles
-  globals.css       → Variables CSS + Tailwind base
+  blizzard.ts  → getAccessToken, getGuildRoster, getCharacterProfile, getCharacterMedia
+  supabase.ts  → getSupabaseClient() (browser anon), createAdminClient() (server service role)
+  auth.ts      → authOptions NextAuth + OFFICER_RANKS constant
+  discord.ts   → notifyNewApplication() — webhook no bloqueante
+  utils.ts     → cn() (clsx + tailwind-merge)
 ```
 
 ## QA Checklist
 
-- [ ] Auth Flow: Login Battle.net → callback → perfil guardado en `profiles`
+- [x] Auth Flow: Login Battle.net → callback → perfil guardado en `profiles`
+- [x] Nueva postulación → notificación en Discord (webhook en `/api/applications`)
+- [x] `/dashboard` inaccesible sin `guild_rank` de oficial (`OFFICER_RANKS` en `lib/auth.ts`)
+- [x] ISR en roster: `revalidate = 3600`
 - [ ] Imágenes de personaje cargan desde CDN de Blizzard (`render.worldofwarcraft.com`)
-- [ ] `/dashboard` inaccesible sin `guild_rank` de oficial
+- [ ] Fallback elegante cuando la API de Blizzard no responde (actualmente silent-fail)
 - [ ] Lighthouse Performance > 90 y SEO > 90
-- [ ] Fallback elegante cuando la API de Blizzard no responde
-- [ ] Nueva postulación → notificación en Discord
+- [ ] `middleware.ts` para proteger `/dashboard` a nivel de Edge (hoy el guard está en el Server Component)
