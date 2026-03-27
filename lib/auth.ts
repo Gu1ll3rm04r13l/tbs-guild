@@ -104,10 +104,14 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.battleTag = (user as { battleTag?: string }).battleTag ?? user.name;
         token.sub = user.id;
+      }
+      // Persist the user's access token so server routes can call wow.profile APIs
+      if (account?.access_token) {
+        token.accessToken = account.access_token;
       }
       // Fetch guild rank by battle_tag (not by id — bnet id is numeric, not uuid)
       if (token.battleTag) {
@@ -134,6 +138,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { isOfficer?: boolean }).isOfficer = OFFICER_RANKS.includes(
           (token.guildRank as string) ?? ""
         );
+        (session.user as { accessToken?: string }).accessToken = token.accessToken as string ?? undefined;
       }
       return session;
     },
