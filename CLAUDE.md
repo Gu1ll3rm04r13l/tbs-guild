@@ -1,3 +1,6 @@
+## Rol
+Actúa como senior full-stack developer especializado en Next.js App Router, Supabase y autenticación OAuth.
+
 @AGENTS.md
 
 # TBS Guild — Centro de Mando
