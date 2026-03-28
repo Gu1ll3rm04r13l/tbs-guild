@@ -1,9 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Users, ScrollText, Flame } from "lucide-react";
+import { ArrowRight, Users, ScrollText, Flame, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RaidProgressBar } from "@/components/progress/RaidProgressBar";
+import { LiveTicker } from "@/components/live/LiveTicker";
+import { LiveCombatWidget } from "@/components/live/LiveCombatWidget";
+import { KillFeed } from "@/components/live/KillFeed";
+import { ServerLeaderboard } from "@/components/leaderboard/ServerLeaderboard";
 import { createAdminClient } from "@/lib/supabase";
+import { getWCLRaidData } from "@/lib/warcraftlogs";
+import { getServerLeaderboard } from "@/lib/raiderio";
 
 async function getRaidProgressData() {
   try {
@@ -19,7 +25,11 @@ async function getRaidProgressData() {
 }
 
 export default async function HomePage() {
-  const progressList = await getRaidProgressData();
+  const [progressList, wclData, leaderboard] = await Promise.all([
+    getRaidProgressData(),
+    getWCLRaidData(),
+    getServerLeaderboard(),
+  ]);
 
   return (
     <div>
@@ -115,10 +125,32 @@ export default async function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#080706] to-transparent z-10" />
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-20 space-y-16">
+      {/* ══════════════════════════════════════════
+          LIVE TICKER
+      ══════════════════════════════════════════ */}
+      <LiveTicker liveStatus={wclData.liveStatus} recentKills={wclData.recentKills} />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-20 space-y-16 pt-10">
 
         {/* ══════════════════════════════════════════
-            RAID PROGRESS
+            LIVE COMBAT WIDGET
+        ══════════════════════════════════════════ */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Flame className="h-4 w-4 text-[#E8560A]" />
+            <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
+              Burning Status
+            </h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
+          </div>
+          <LiveCombatWidget
+            liveStatus={wclData.liveStatus}
+            bossProgress={wclData.bossProgress}
+          />
+        </section>
+
+        {/* ══════════════════════════════════════════
+            RAID PROGRESS (Supabase — overall tier)
         ══════════════════════════════════════════ */}
         {progressList.length > 0 && (
           <section className="space-y-6">
@@ -152,6 +184,33 @@ export default async function HomePage() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* ══════════════════════════════════════════
+            KILL FEED
+        ══════════════════════════════════════════ */}
+        {wclData.recentKills.length > 0 && (
+          <div className="rounded-lg border border-[#2a2318] bg-[#111009] p-5">
+            <KillFeed kills={wclData.recentKills} />
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════
+            SERVER LEADERBOARD
+        ══════════════════════════════════════════ */}
+        {leaderboard.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Trophy className="h-4 w-4 text-[#E8560A]" />
+              <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
+                Top Guilds — Ragnaros
+              </h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
+            </div>
+            <div className="rounded-lg border border-[#2a2318] bg-[#111009] p-4">
+              <ServerLeaderboard entries={leaderboard} raidName="Ragnaros" />
             </div>
           </section>
         )}
