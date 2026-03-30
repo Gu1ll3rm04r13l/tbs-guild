@@ -21,10 +21,12 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
 
   const isOfficer = (session?.user as { isOfficer?: boolean })?.isOfficer;
   const battleTag = (session?.user as { battleTag?: string })?.battleTag ?? session?.user?.name;
+  const mainCharName = (session?.user as { mainCharName?: string | null })?.mainCharName;
+  const avatarUrl    = (session?.user as { avatarUrl?: string | null })?.avatarUrl;
 
   const navLinks = [
     { href: "/roster", label: "Roster" },
-    { href: "/apply", label: "Apply" },
+    ...(!session ? [{ href: "/apply", label: "Apply" }] : []),
   ];
 
   return (
@@ -88,12 +90,20 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
             </Link>
           ))}
           {isOfficer && (
-            <Link
-              href="/dashboard"
-              className="rounded px-3 py-1.5 text-sm text-[#b8a898] hover:text-[#f5efe8] hover:bg-[#1a1710] transition-colors"
-            >
-              Dashboard
-            </Link>
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded px-3 py-1.5 text-sm text-[#b8a898] hover:text-[#f5efe8] hover:bg-[#1a1710] transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/recruits"
+                className="rounded px-3 py-1.5 text-sm text-[#b8a898] hover:text-[#f5efe8] hover:bg-[#1a1710] transition-colors"
+              >
+                Reclutamiento
+              </Link>
+            </>
           )}
         </nav>
 
@@ -109,8 +119,14 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
                 aria-label="Profile menu"
               >
                 {/* Avatar circle */}
-                <div className="relative h-8 w-8 rounded-full border border-[#E8560A]/40 bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-xs font-bold text-[#E8560A] transition-all group-hover:border-[#E8560A]/80 group-hover:shadow-[0_0_10px_rgba(232,86,10,0.3)]">
-                  {battleTag ? battleTag.charAt(0).toUpperCase() : <User className="h-3.5 w-3.5" />}
+                <div className="relative h-8 w-8 rounded-full border border-[#E8560A]/40 overflow-hidden bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-xs font-bold text-[#E8560A] transition-all group-hover:border-[#E8560A]/80 group-hover:shadow-[0_0_10px_rgba(232,86,10,0.3)]">
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt="avatar" fill className="object-cover" sizes="32px" />
+                  ) : battleTag ? (
+                    battleTag.charAt(0).toUpperCase()
+                  ) : (
+                    <User className="h-3.5 w-3.5" />
+                  )}
                 </div>
                 <ChevronDown className={cn("h-3 w-3 text-[#6b5e50] transition-transform hidden sm:block", profileOpen && "rotate-180")} />
               </button>
@@ -123,8 +139,12 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
                     {/* Header del perfil */}
                     <div className="px-4 py-3 border-b border-[#1e1a13]">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full border border-[#E8560A]/50 bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-sm font-bold text-[#E8560A]">
-                          {battleTag ? battleTag.charAt(0).toUpperCase() : "?"}
+                        <div className="relative h-10 w-10 rounded-full border border-[#E8560A]/50 overflow-hidden bg-gradient-to-br from-[#3d1f08] to-[#1a0d03] flex items-center justify-center text-sm font-bold text-[#E8560A]">
+                          {avatarUrl ? (
+                            <Image src={avatarUrl} alt="avatar" fill className="object-cover" sizes="40px" />
+                          ) : (
+                            battleTag ? battleTag.charAt(0).toUpperCase() : "?"
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[#f5efe8] truncate">
@@ -144,15 +164,38 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
 
                     {/* Links */}
                     <div className="py-1">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <User className="h-3.5 w-3.5 text-[#F0B830]" />
+                        Mi perfil
+                        {!mainCharName && (
+                          <span className="ml-auto text-[9px] font-mono text-[#E8560A] border border-[#E8560A]/30 rounded px-1">
+                            Sin vincular
+                          </span>
+                        )}
+                      </Link>
                       {isOfficer && (
-                        <Link
-                          href="/dashboard"
-                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
-                          onClick={() => setProfileOpen(false)}
-                        >
-                          <LayoutDashboard className="h-3.5 w-3.5 text-[#E8560A]" />
-                          Officer Dashboard
-                        </Link>
+                        <>
+                          <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
+                            onClick={() => setProfileOpen(false)}
+                          >
+                            <LayoutDashboard className="h-3.5 w-3.5 text-[#E8560A]" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            href="/recruits"
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
+                            onClick={() => setProfileOpen(false)}
+                          >
+                            <LayoutDashboard className="h-3.5 w-3.5 text-[#6b5e50]" />
+                            Reclutamiento
+                          </Link>
+                        </>
                       )}
                       <button
                         onClick={() => { signOut(); setProfileOpen(false); }}
@@ -197,13 +240,22 @@ export function Navbar({ progress }: { progress?: ProgressBadgeProps }) {
             </Link>
           ))}
           {isOfficer && (
-            <Link
-              href="/dashboard"
-              className="block rounded px-3 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8]"
-              onClick={() => setMobileOpen(false)}
-            >
-              Officer Dashboard
-            </Link>
+            <>
+              <Link
+                href="/dashboard"
+                className="block rounded px-3 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8]"
+                onClick={() => setMobileOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/recruits"
+                className="block rounded px-3 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8]"
+                onClick={() => setMobileOpen(false)}
+              >
+                Reclutamiento
+              </Link>
+            </>
           )}
         </nav>
       )}

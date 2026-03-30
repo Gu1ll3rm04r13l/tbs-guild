@@ -130,7 +130,7 @@ function GuildRow({
           entry.isTBS ? "text-[#F0B830]" : "text-[#6b5e50]"
         }`}
       >
-        {entry.ranks.realm > 0 ? `#${entry.ranks.realm}` : "—"}
+        #{entry.serverRank}
       </span>
     </div>
   );

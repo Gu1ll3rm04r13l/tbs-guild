@@ -12,6 +12,15 @@ export type RosterMember = {
     active_spec?: { name: string };
     character_class?: { name: string };
   } | null;
+  raidProgress?: {
+    bossesDown: number;
+    totalBosses: number;
+    summary: string;
+  } | null;
+  mythicScore?: {
+    score: number;
+    color: string;
+  } | null;
 };
 
 type RosterGridProps = {
@@ -39,6 +48,8 @@ export function RosterGrid({ members }: RosterGridProps) {
           characterClass={m.characterClass}
           avatarUrl={m.avatarUrl}
           stats={m.stats}
+          raidProgress={m.raidProgress}
+          mythicScore={m.mythicScore}
         />
       ))}
     </div>

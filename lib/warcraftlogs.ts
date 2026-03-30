@@ -4,6 +4,9 @@ const GUILD_NAME = process.env.WCL_GUILD_NAME ?? "The Burning Seagull";
 const REALM_SLUG = process.env.WCL_REALM_SLUG ?? "ragnaros";
 const REGION = process.env.WCL_REGION ?? "US";
 
+const ZONE_ID = parseInt(process.env.WCL_ZONE_ID ?? "0");
+const ATTENDANCE_REPORTS = 10;
+
 const TOKEN_URL = "https://www.warcraftlogs.com/oauth/token";
 const API_URL = "https://www.warcraftlogs.com/api/v2/client";
 
@@ -315,5 +318,179 @@ export async function getWCLRaidData(): Promise<WCLRaidData> {
   } catch (err) {
     console.error("[WCL] getWCLRaidData failed:", err);
     return EMPTY;
+  }
+}
+
+// ─── Character parses (Armory) ────────────────────────────────────────────────
+
+export type CharacterWCLStats = {
+  avgParse: number | null;
+  bestParse: { boss: string; percent: number; spec: string } | null;
+  wclProfileUrl: string;
+};
+
+const CHAR_RANKINGS_QUERY = `
+  query GetCharacterRankings($name: String!, $serverSlug: String!, $serverRegion: String!, $zoneID: Int!) {
+    characterData {
+      character(name: $name, serverSlug: $serverSlug, serverRegion: $serverRegion) {
+        zoneRankings(zoneID: $zoneID, difficulty: 5)
+      }
+    }
+  }
+`;
+
+export async function getCharacterWCLStats(
+  characterName: string
+): Promise<CharacterWCLStats | null> {
+  const wclProfileUrl = `https://www.warcraftlogs.com/character/${REGION.toLowerCase()}/${REALM_SLUG}/${characterName.toLowerCase()}`;
+
+  if (!ZONE_ID) return { avgParse: null, bestParse: null, wclProfileUrl };
+
+  try {
+    const data = await wclQuery<{
+      characterData: {
+        character: {
+          zoneRankings: {
+            bestPerformanceAverage?: number;
+            rankings?: { encounter: { name: string }; rankPercent: number; spec: string }[];
+          } | null;
+        } | null;
+      };
+    }>(
+      CHAR_RANKINGS_QUERY,
+      { name: characterName, serverSlug: REALM_SLUG, serverRegion: REGION, zoneID: ZONE_ID },
+      300
+    );
+
+    const zr = data.characterData?.character?.zoneRankings;
+    if (!zr) return { avgParse: null, bestParse: null, wclProfileUrl };
+
+    const avgParse = zr.bestPerformanceAverage != null
+      ? Math.round(zr.bestPerformanceAverage)
+      : null;
+
+    const bestParse = (zr.rankings ?? []).reduce<CharacterWCLStats["bestParse"]>(
+      (best, r) =>
+        !best || r.rankPercent > best.percent
+          ? { boss: r.encounter.name, percent: Math.round(r.rankPercent), spec: r.spec }
+          : best,
+      null
+    );
+
+    return { avgParse, bestParse, wclProfileUrl };
+  } catch {
+    return { avgParse: null, bestParse: null, wclProfileUrl };
+  }
+}
+
+// ─── Guild Attendance & Loot ──────────────────────────────────────────────────
+
+export type AttendanceEntry = {
+  name: string;
+  attended: number;       // reports present in
+  total: number;          // reports analyzed
+  attendancePct: number;  // 0–100
+  lootReceived: number;
+  ratio: number | null;   // loot per raid attended
+};
+
+const ATTENDANCE_QUERY = `
+  query GetGuildAttendance($guildName: String!, $serverSlug: String!, $serverRegion: String!, $limit: Int!) {
+    reportData {
+      reports(
+        guildName: $guildName
+        guildServerSlug: $serverSlug
+        guildServerRegion: $serverRegion
+        limit: $limit
+      ) {
+        data {
+          code
+          startTime
+          masterData(translate: false) {
+            actors { name type }
+          }
+          events(
+            dataType: Loot
+            difficulty: 5
+            startTime: 0
+            endTime: 99999999
+            limit: 500
+          ) {
+            data
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getGuildAttendance(): Promise<AttendanceEntry[]> {
+  try {
+    const data = await wclQuery<{
+      reportData: {
+        reports: {
+          data: {
+            code: string;
+            masterData: { actors: { name: string; type: string }[] };
+            events: { data: unknown[] };
+          }[];
+        };
+      };
+    }>(ATTENDANCE_QUERY, {
+      guildName: GUILD_NAME,
+      serverSlug: REALM_SLUG,
+      serverRegion: REGION,
+      limit: ATTENDANCE_REPORTS,
+    }, 300);
+
+    const reports = data.reportData.reports.data ?? [];
+    if (!reports.length) return [];
+
+    // Count per-player attendance and loot
+    const playerMap = new Map<string, { attended: number; loot: number }>();
+
+    for (const report of reports) {
+      const players = new Set(
+        (report.masterData?.actors ?? [])
+          .filter((a) => a.type === "Player")
+          .map((a) => a.name)
+      );
+
+      for (const name of players) {
+        if (!playerMap.has(name)) playerMap.set(name, { attended: 0, loot: 0 });
+        playerMap.get(name)!.attended += 1;
+      }
+
+      // Count loot events per player
+      for (const event of report.events?.data ?? []) {
+        const e = event as { targetID?: number; type?: string };
+        // WCL loot events have targetID → resolve via actors
+        const actors = report.masterData?.actors ?? [];
+        if (e.targetID != null) {
+          const actor = actors[e.targetID - 1];
+          if (actor?.type === "Player") {
+            const entry = playerMap.get(actor.name);
+            if (entry) entry.loot += 1;
+          }
+        }
+      }
+    }
+
+    const total = reports.length;
+
+    return Array.from(playerMap.entries())
+      .map(([name, { attended, loot }]) => ({
+        name,
+        attended,
+        total,
+        attendancePct: Math.round((attended / total) * 100),
+        lootReceived: loot,
+        ratio: attended > 0 ? Math.round((loot / attended) * 10) / 10 : null,
+      }))
+      .filter((e) => e.attendancePct >= 10) // filter out occasional guests
+      .sort((a, b) => b.attendancePct - a.attendancePct || a.name.localeCompare(b.name));
+  } catch (err) {
+    console.error("[WCL] getGuildAttendance failed:", err);
+    return [];
   }
 }

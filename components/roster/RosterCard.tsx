@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Shield, Swords, HeartPulse, Star } from "lucide-react";
 import { cn, getClassColor } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ type RosterCardProps = {
   characterClass: string;
   avatarUrl?: string | null;
   stats?: CharacterStats | null;
+  raidProgress?: { bossesDown: number; totalBosses: number; summary: string } | null;
+  mythicScore?: { score: number; color: string } | null;
 };
 
 const ROLE_BY_SPEC: Record<string, "tank" | "healer" | "dps"> = {
@@ -39,13 +42,12 @@ function RoleIcon({ role }: { role: "tank" | "healer" | "dps" }) {
 const RANK_LABELS: Record<number, string> = {
   0: "Guild Master",
   1: "Officer",
-  2: "Class Lead",
-  3: "Raider",
-  4: "Trial",
+  4: "Raider",
 };
 
-export function RosterCard({ name, realm, rank, characterClass, avatarUrl, stats }: RosterCardProps) {
+export function RosterCard({ name, rank, characterClass, avatarUrl, stats, raidProgress, mythicScore }: RosterCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const classColor = getClassColor(characterClass);
   const specName = stats?.active_spec?.name ?? "";
   const role = specName ? inferRole(specName) : "dps";
@@ -53,9 +55,10 @@ export function RosterCard({ name, realm, rank, characterClass, avatarUrl, stats
   const rankLabel = RANK_LABELS[rank] ?? `Rank ${rank}`;
 
   return (
-    <div
+    <Link
+      href={`/armory/${encodeURIComponent(name)}`}
       className={cn(
-        "group relative overflow-hidden rounded-lg border bg-[#111009] transition-all duration-200 cursor-default",
+        "group relative overflow-hidden rounded-lg border bg-[#111009] transition-all duration-200 block",
         hovered
           ? "border-[#3d3220] shadow-lg shadow-black/60"
           : "border-[#2a2318]"
@@ -75,8 +78,15 @@ export function RosterCard({ name, realm, rank, characterClass, avatarUrl, stats
       <div className="p-4 flex items-center gap-3">
         {/* Avatar */}
         <div className="relative h-12 w-12 rounded overflow-hidden bg-[#080706] border border-[#2a2318] shrink-0">
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="48px" />
+          {avatarUrl && !imgError ? (
+            <Image
+              src={avatarUrl}
+              alt={name}
+              fill
+              className="object-cover"
+              sizes="48px"
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div
               className="h-full w-full flex items-center justify-center text-lg font-black"
@@ -93,7 +103,7 @@ export function RosterCard({ name, realm, rank, characterClass, avatarUrl, stats
             <span className="font-bold text-sm truncate" style={{ color: classColor }}>
               {name}
             </span>
-            {rank <= 2 && <Star className="h-3 w-3 text-[#F0B830] shrink-0 fill-[#F0B830]" />}
+            {rank <= 1 && <Star className="h-3 w-3 text-[#F0B830] shrink-0 fill-[#F0B830]" />}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <RoleIcon role={role} />
@@ -115,10 +125,23 @@ export function RosterCard({ name, realm, rank, characterClass, avatarUrl, stats
         )}
       </div>
 
-      <div className="px-4 pb-3 flex items-center justify-between">
-        <span className="text-xs text-[#6b5e50]">{rankLabel}</span>
-        <span className="text-xs text-[#3d3220] font-mono">{realm}</span>
+      {/* Bottom stats row */}
+      <div className="px-4 pb-3 flex items-center gap-2 text-xs font-mono">
+        <span className="text-[#6b5e50] flex-1">{rankLabel}</span>
+
+        {raidProgress && (
+          <span className="text-[#D4960A]" title="Mythic progress (current tier)">
+            {raidProgress.summary}
+          </span>
+        )}
+
+        <span
+          style={{ color: mythicScore ? mythicScore.color : "#3d3220" }}
+          title="Mythic+ score (Raider.io)"
+        >
+          {mythicScore ? mythicScore.score.toLocaleString() : "—"} io
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }
