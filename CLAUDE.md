@@ -149,7 +149,7 @@ Colores de clase WoW — variables CSS (solo nombres / barras):
 - [x] Nueva postulación → notificación en Discord (webhook en `/api/applications`)
 - [x] `/dashboard` inaccesible sin `guild_rank` de oficial (`OFFICER_RANKS` en `lib/auth.ts`)
 - [x] ISR en roster: `revalidate = 3600`
-- [ ] Imágenes de personaje cargan desde CDN de Blizzard (`render.worldofwarcraft.com`)
-- [ ] Fallback elegante cuando la API de Blizzard no responde (actualmente silent-fail)
+- [x] Imágenes de personaje cargan desde CDN de Blizzard (`render.worldofwarcraft.com`) — `onError` fallback al avatar de inicial en `RosterCard`
+- [x] Fallback elegante cuando la API de Blizzard no responde — banner error completo + warning amber para fallos parciales en `/roster`
 - [ ] Lighthouse Performance > 90 y SEO > 90
-- [ ] `middleware.ts` para proteger `/dashboard` a nivel de Edge (hoy el guard está en el Server Component)
+- [x] `middleware.ts` para proteger `/dashboard` a nivel de Edge — `withAuth` + check de `guildRank` en JWT

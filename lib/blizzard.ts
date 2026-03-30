@@ -4,6 +4,8 @@ const CLIENT_SECRET = process.env.BLIZZARD_CLIENT_SECRET!;
 const REALM_SLUG = process.env.BLIZZARD_REALM_SLUG ?? "";
 const GUILD_SLUG = process.env.BLIZZARD_GUILD_SLUG ?? "";
 const LOCALE = process.env.BLIZZARD_LOCALE ?? "en_GB";
+// Current raid tier — must match the instance name returned by Blizzard API
+const CURRENT_RAID_INSTANCE = process.env.BLIZZARD_RAID_INSTANCE ?? "Liberation of Undermine";
 
 const TOKEN_URL = `https://${REGION}.battle.net/oauth/token`;
 const API_BASE = `https://${REGION}.api.blizzard.com`;
@@ -58,6 +60,7 @@ export type GuildMember = {
   character: {
     name: string;
     id: number;
+    level?: number;
     realm: { slug: string };
     playable_class?: { name: string };
   };
@@ -157,6 +160,60 @@ export async function getGuildRaidProgress(): Promise<RaidEncounters | null> {
       `profile-${REGION}`,
       3600
     );
+  } catch {
+    return null;
+  }
+}
+
+// ─── Character raid progress (current tier, Mythic) ───────────────────────────
+export type CharacterRaidProgress = {
+  bossesDown: number;
+  totalBosses: number;
+  summary: string;  // e.g. "1/9 M"
+  abbrev: string;   // e.g. "LoU"
+};
+
+export async function getCharacterRaidProgress(
+  realmSlug: string,
+  characterName: string
+): Promise<CharacterRaidProgress | null> {
+  try {
+    const data = await blizzardFetch<RaidEncounters>(
+      `/profile/wow/character/${realmSlug}/${characterName.toLowerCase()}/encounters/raids`,
+      `profile-${REGION}`,
+      3600
+    );
+    const expansions = data.expansions;
+    if (!expansions?.length) return null;
+
+    // Always use the last instance of the last expansion (current tier)
+    const lastExp = expansions[expansions.length - 1];
+    const instances = lastExp.instances;
+    if (!instances?.length) return null;
+    const currentInstance = instances[instances.length - 1];
+    const instanceName = currentInstance.instance.name;
+
+    const mythicMode = currentInstance.modes?.find((mo) => mo.difficulty.type === "MYTHIC");
+    // Get total boss count from any available mode (same across all difficulties)
+    const anyMode = currentInstance.modes?.[0];
+    const totalBosses = mythicMode?.progress.total_count ?? anyMode?.progress.total_count ?? 0;
+    const bossesDown = mythicMode?.progress.completed_count ?? 0;
+
+    if (totalBosses === 0) return null;
+
+    // Abbreviate instance name for display (e.g. "Liberation of Undermine" → "LoU")
+    const abbrev = instanceName
+      .split(/\s+/)
+      .filter((w) => /^[A-Z]/.test(w))
+      .map((w) => w[0])
+      .join("");
+
+    return {
+      bossesDown,
+      totalBosses,
+      summary: `${bossesDown}/${totalBosses} M`,
+      abbrev,
+    };
   } catch {
     return null;
   }

@@ -119,10 +119,12 @@ export const authOptions: NextAuthOptions = {
           const adminClient = createAdminClient();
           const { data: profile } = await adminClient
             .from("profiles")
-            .select("guild_rank")
+            .select("guild_rank, main_char_name, avatar_url")
             .eq("battle_tag", token.battleTag as string)
             .maybeSingle();
-          token.guildRank = profile?.guild_rank ?? null;
+          token.guildRank    = profile?.guild_rank    ?? null;
+          token.mainCharName = profile?.main_char_name ?? null;
+          token.avatarUrl    = profile?.avatar_url    ?? null;
         } catch (err) {
           console.error("[auth] jwt Supabase error:", err);
         }
@@ -139,6 +141,8 @@ export const authOptions: NextAuthOptions = {
           (token.guildRank as string) ?? ""
         );
         (session.user as { accessToken?: string }).accessToken = token.accessToken as string ?? undefined;
+        (session.user as { mainCharName?: string | null }).mainCharName = token.mainCharName as string | null;
+        (session.user as { avatarUrl?: string | null }).avatarUrl = token.avatarUrl as string | null;
       }
       return session;
     },

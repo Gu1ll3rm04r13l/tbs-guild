@@ -36,6 +36,13 @@ export const metadata: Metadata = {
     title: "The Burning Seagull",
     description: "Mythic raiding guild — Ragnaros US",
     type: "website",
+    images: [{ url: "/logo-banner.png", width: 1200, height: 630, alt: "The Burning Seagull" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Burning Seagull",
+    description: "Mythic raiding guild — Ragnaros US",
+    images: ["/logo-banner.png"],
   },
 };
 
@@ -64,6 +71,12 @@ export default async function RootLayout({
       lang="en"
       className={`${inter.variable} ${geistMono.variable} ${geist.variable} h-full`}
     >
+      <head>
+        <link rel="preconnect" href="https://raider.io" />
+        <link rel="preconnect" href="https://www.warcraftlogs.com" />
+        <link rel="preconnect" href="https://render.worldofwarcraft.com" />
+        <link rel="dns-prefetch" href="https://us.api.blizzard.com" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] antialiased">
         <SessionProvider>
           <Navbar
