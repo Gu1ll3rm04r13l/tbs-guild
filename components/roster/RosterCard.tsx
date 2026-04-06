@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Shield, Swords, HeartPulse, Star } from "lucide-react";
 import { cn, getClassColor } from "@/lib/utils";
 
@@ -46,7 +45,6 @@ const RANK_LABELS: Record<number, string> = {
 };
 
 export function RosterCard({ name, rank, characterClass, avatarUrl, stats, raidProgress, mythicScore }: RosterCardProps) {
-  const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
   const classColor = getClassColor(characterClass);
   const specName = stats?.active_spec?.name ?? "";
@@ -55,16 +53,11 @@ export function RosterCard({ name, rank, characterClass, avatarUrl, stats, raidP
   const rankLabel = RANK_LABELS[rank] ?? `Rank ${rank}`;
 
   return (
-    <Link
-      href={`/armory/${encodeURIComponent(name)}`}
+    <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border bg-[#111009] transition-all duration-200 block",
-        hovered
-          ? "border-[#3d3220] shadow-lg shadow-black/60"
-          : "border-[#2a2318]"
+        "group relative overflow-hidden rounded-lg border bg-[#111009] transition-all duration-200",
+        "border-[#2a2318] hover:border-[#3d3220] hover:shadow-lg hover:shadow-black/60"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* Class color top line */}
       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: classColor }} />
@@ -115,10 +108,7 @@ export function RosterCard({ name, rank, characterClass, avatarUrl, stats, raidP
 
         {/* ilvl — revealed on hover */}
         {ilvl && (
-          <div className={cn(
-            "shrink-0 text-right transition-all duration-200",
-            hovered ? "opacity-100" : "opacity-0"
-          )}>
+          <div className="shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <span className="font-mono text-sm font-black text-[#F0B830]">{ilvl}</span>
             <p className="text-[10px] text-[#6b5e50]">ilvl</p>
           </div>
@@ -142,6 +132,6 @@ export function RosterCard({ name, rank, characterClass, avatarUrl, stats, raidP
           {mythicScore ? mythicScore.score.toLocaleString() : "—"} io
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
