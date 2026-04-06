@@ -249,13 +249,15 @@ export function HomeClient({
             </div>
 
             {/* Right: value cards */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="group flex justify-end mb-1">
-                {isOfficer && <EditBar editing={valEdit} saving={valSaving}
-                  onEdit={() => { setValDraft(content); setValEdit(true); }}
-                  onSave={() => doSave(valDraft, setValSaving, setValEdit)}
-                  onCancel={() => setValEdit(false)} />}
-              </div>
+            <div className="group lg:col-span-2 space-y-3">
+              {isOfficer && (
+                <div className="flex justify-end h-4">
+                  <EditBar editing={valEdit} saving={valSaving}
+                    onEdit={() => { setValDraft(content); setValEdit(true); }}
+                    onSave={() => doSave(valDraft, setValSaving, setValEdit)}
+                    onCancel={() => setValEdit(false)} />
+                </div>
+              )}
               {content.about_values.map((v, i) => (
                 <div key={i} className="rounded-lg border border-[#2a2318] bg-[#111009] p-5">
                   <div className="flex items-start gap-3">
