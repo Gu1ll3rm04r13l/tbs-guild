@@ -1,261 +1,219 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Users, ScrollText, Flame, Trophy } from "lucide-react";
+import { ArrowRight, Shield, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RaidProgressBar } from "@/components/progress/RaidProgressBar";
-import { LiveTicker } from "@/components/live/LiveTicker";
-import { LiveCombatWidget } from "@/components/live/LiveCombatWidget";
-import { KillFeed } from "@/components/live/KillFeed";
-import { ServerLeaderboard } from "@/components/leaderboard/ServerLeaderboard";
-import { createAdminClient } from "@/lib/supabase";
-import { getWCLRaidData } from "@/lib/warcraftlogs";
-import { getServerLeaderboard } from "@/lib/raiderio";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n";
 
-async function getRaidProgressData() {
-  try {
-    const adminClient = createAdminClient();
-    const { data } = await adminClient
-      .from("raid_progress")
-      .select("*")
-      .order("bosses_down", { ascending: false });
-    return data ?? [];
-  } catch {
-    return [];
-  }
-}
+const PLATFORMS = [
+  {
+    key: "rio" as const,
+    name: "Raider.io",
+    href: "https://raider.io/guilds/us/ragnaros/The%20Burning%20Seagull",
+    accent: "#1BABE4",
+    icon: <Shield className="h-5 w-5" />,
+  },
+  {
+    key: "wcl" as const,
+    name: "WarcraftLogs",
+    href: "https://www.warcraftlogs.com/guild/us/ragnaros/the%20burning%20seagull",
+    accent: "#E8560A",
+    icon: <BarChart2 className="h-5 w-5" />,
+  },
+];
 
-export default async function HomePage() {
-  const [progressList, wclData, leaderboard] = await Promise.all([
-    getRaidProgressData(),
-    getWCLRaidData(),
-    getServerLeaderboard(),
-  ]);
+export default function HomePage() {
+  const { lang } = useLanguage();
+  const T = t[lang];
 
   return (
     <div>
       {/* ══════════════════════════════════════════
-          HERO — Cinematic Banner
+          HERO
       ══════════════════════════════════════════ */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
 
-        {/* Background: cinematic banner image */}
+        {/* Background: guild emblem */}
         <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[#080706]" />
           <Image
-            src="/logo-banner.png"
-            alt="The Burning Seagull banner"
+            src="/Fiery emblem of The Burning Seagull.png"
+            alt="The Burning Seagull emblem"
             fill
-            className="object-cover object-center"
+            className="object-contain object-right"
             priority
             sizes="100vw"
+            style={{ opacity: 0.85 }}
           />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#080706]/95 via-[#080706]/70 to-[#080706]/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#080706] via-transparent to-[#080706]/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#080706] via-[#080706]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080706] via-transparent to-[#080706]/60" />
         </div>
 
-        {/* Ember particles (pure CSS) */}
+        {/* Ember particles */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="ember-particle absolute rounded-full"
-              style={{
-                width: `${2 + (i % 3)}px`,
-                height: `${2 + (i % 3)}px`,
-                background: i % 2 === 0 ? "#E8560A" : "#F0B830",
-                left: `${10 + i * 11}%`,
-                bottom: `${15 + (i % 4) * 10}%`,
-                animationDuration: `${3 + i * 0.7}s`,
-                animationDelay: `${i * 0.4}s`,
-                opacity: 0.7,
-              }}
-            />
-          ))}
+          {[...Array(30)].map((_, i) => {
+            const colors = ["#E8560A", "#F0B830", "#C41A00", "#FF6B00", "#D4960A"];
+            return (
+              <div
+                key={i}
+                className="ember-particle absolute rounded-full"
+                style={{
+                  width: `${1.2 + (i % 5) * 0.7}px`,
+                  height: `${1.2 + (i % 5) * 0.7}px`,
+                  background: colors[i % colors.length],
+                  left: `${(i * 3.17 + 2) % 95}%`,
+                  bottom: `${5 + (i * 5.3) % 42}%`,
+                  animationDuration: `${2.4 + (i * 0.41) % 2.8}s`,
+                  animationDelay: `${(i * 0.23) % 4}s`,
+                  opacity: 0.45 + (i % 4) * 0.14,
+                }}
+              />
+            );
+          })}
         </div>
 
         {/* Hero content */}
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-20 w-full">
           <div className="max-w-xl space-y-6">
 
-            {/* Eyebrow */}
             <div className="flex items-center gap-2">
               <div className="h-px w-8 bg-gradient-to-r from-[#E8560A] to-transparent" />
               <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#E8560A]">
-                Mythic Progression · Ragnaros US
+                {T.hero.eyebrow}
               </span>
             </div>
 
-            {/* Title */}
             <div className="space-y-1">
-              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none text-white">
-                THE
-              </h1>
-              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none fire-text">
-                BURNING
-              </h1>
-              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none text-white">
-                SEAGULL
-              </h1>
+              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none text-white">THE</h1>
+              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none fire-text">BURNING</h1>
+              <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-none text-white">SEAGULL</h1>
             </div>
 
-            {/* Description */}
             <p className="text-[#b8a898] text-base leading-relaxed max-w-sm">
-              Semi-tryhard Mythic raiding. Serious progression, no excuses on raid nights.
-              Good vibes, high standards.
+              {T.hero.description}
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild size="lg">
                 <Link href="/apply">
-                  Apply Now <ArrowRight className="h-4 w-4" />
+                  {T.hero.applyCta} <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/roster">
-                  <Users className="h-4 w-4" />
-                  View Roster
-                </Link>
+                <Link href="/roster">{T.hero.rosterCta}</Link>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#080706] to-transparent z-10" />
       </section>
 
-      {/* ══════════════════════════════════════════
-          LIVE TICKER
-      ══════════════════════════════════════════ */}
-      <LiveTicker liveStatus={wclData.liveStatus} recentKills={wclData.recentKills} />
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-20 space-y-16 pt-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-24 pt-24">
 
         {/* ══════════════════════════════════════════
-            LIVE COMBAT WIDGET
+            ABOUT US
         ══════════════════════════════════════════ */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Flame className="h-4 w-4 text-[#E8560A]" />
+        <section id="about" className="scroll-mt-20">
+
+          <div className="flex items-center gap-3 mb-12">
+            <div className="h-px w-6 bg-[#E8560A]" />
             <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
-              Burning Status
+              {T.about.sectionLabel}
             </h2>
             <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
           </div>
-          <LiveCombatWidget
-            liveStatus={wclData.liveStatus}
-            bossProgress={wclData.bossProgress}
-          />
-        </section>
 
-        {/* ══════════════════════════════════════════
-            RAID PROGRESS (Supabase — overall tier)
-        ══════════════════════════════════════════ */}
-        {progressList.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <Flame className="h-4 w-4 text-[#E8560A]" />
-              <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
-                Current Progression
-              </h2>
-              <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
+          {/* Narrative + Values */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16">
+
+            <div className="lg:col-span-3 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#f5efe8] leading-snug">
+                {T.about.heading1}<br />
+                <span className="fire-text">{T.about.heading2}</span>
+              </h3>
+              <div className="space-y-4 text-[#b8a898] leading-relaxed">
+                <p>{T.about.p1}</p>
+                <p>{T.about.p2}</p>
+                <p>{T.about.p3}</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {progressList.map((raid) => {
-                const bosses = Array.from({ length: raid.total_bosses }, (_, i) => ({
-                  id: i,
-                  name: `Boss ${i + 1}`,
-                  defeated: i < raid.bosses_down,
-                }));
-                return (
-                  <div
-                    key={raid.id}
-                    className="rounded-lg border border-[#2a2318] bg-[#111009] p-5 ember-glow"
-                  >
-                    <RaidProgressBar
-                      raidName={raid.raid_name}
-                      bossesDown={raid.bosses_down}
-                      totalBosses={raid.total_bosses}
-                      bosses={bosses}
-                      difficulty={raid.difficulty}
-                    />
+            <div className="lg:col-span-2 space-y-3">
+              {T.about.values.map((v) => (
+                <div key={v.title} className="rounded-lg border border-[#2a2318] bg-[#111009] p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#E8560A] shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-[#f5efe8]">{v.title}</p>
+                      <p className="text-sm text-[#6b5e50] mt-1 leading-relaxed">{v.desc}</p>
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
-          </section>
-        )}
-
-        {/* ══════════════════════════════════════════
-            KILL FEED
-        ══════════════════════════════════════════ */}
-        {wclData.recentKills.length > 0 && (
-          <div className="rounded-lg border border-[#2a2318] bg-[#111009] p-5">
-            <KillFeed kills={wclData.recentKills} />
           </div>
-        )}
 
-        {/* ══════════════════════════════════════════
-            SERVER LEADERBOARD
-        ══════════════════════════════════════════ */}
-        {leaderboard.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Trophy className="h-4 w-4 text-[#E8560A]" />
-              <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
-                Top Guilds — Ragnaros
-              </h2>
-              <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
+          {/* Platform Links */}
+          <div className="mt-14 space-y-3">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px w-4 bg-[#3d3220]" />
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#3d3220]">
+                {T.about.findUsAt}
+              </p>
             </div>
-            <div className="rounded-lg border border-[#2a2318] bg-[#111009] p-4">
-              <ServerLeaderboard entries={leaderboard} raidName="Ragnaros" />
-            </div>
-          </section>
-        )}
 
-        {/* ══════════════════════════════════════════
-            QUICK LINKS
-        ══════════════════════════════════════════ */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/roster"
-            className="group relative rounded-lg border border-[#2a2318] bg-[#111009] p-5 overflow-hidden hover:border-[#E8560A]/30 transition-all duration-300 hover:ember-glow"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#E8560A]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative flex items-start gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded border border-[#3d3220] bg-[#1a1710] text-[#E8560A] group-hover:border-[#E8560A]/40 transition-colors">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#f5efe8] group-hover:fire-text transition-colors">
-                  Guild Roster
-                </h3>
-                <p className="text-sm text-[#6b5e50] mt-1">
-                  Full roster with live character data from Blizzard API.
-                </p>
-              </div>
-            </div>
-          </Link>
+            {PLATFORMS.map((p) => (
+              <a
+                key={p.name}
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center overflow-hidden rounded-lg border border-[#2a2318] bg-[#111009] transition-all duration-300 hover:-translate-y-px"
+                style={{ "--platform-accent": p.accent } as React.CSSProperties}
+              >
+                {/* Icon column */}
+                <div className="relative shrink-0 flex items-center justify-center w-16 self-stretch border-r border-[#2a2318] transition-colors duration-300 group-hover:border-[color:var(--platform-accent)]/20">
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: `linear-gradient(135deg, ${p.accent}18, transparent)` }}
+                  />
+                  <span className="relative text-[#3d3220] transition-colors duration-300 group-hover:text-[color:var(--platform-accent)]">
+                    {p.icon}
+                  </span>
+                </div>
 
-          <Link
-            href="/apply"
-            className="group relative rounded-lg border border-[#2a2318] bg-[#111009] p-5 overflow-hidden hover:border-[#E8560A]/30 transition-all duration-300"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#E8560A]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative flex items-start gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded border border-[#3d3220] bg-[#1a1710] text-[#E8560A] group-hover:border-[#E8560A]/40 transition-colors">
-                <ScrollText className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#f5efe8]">Recruitment</h3>
-                <p className="text-sm text-[#6b5e50] mt-1">
-                  Apply to join. We evaluate all applications within 48 hours.
-                </p>
-              </div>
-            </div>
-          </Link>
+                {/* Content */}
+                <div className="flex flex-1 items-center px-5 py-4 gap-4 min-w-0">
+                  <div className="space-y-0.5 shrink-0">
+                    <p className="text-sm font-bold text-[#f5efe8]">{p.name}</p>
+                    <p className="text-[10px] font-mono text-[#6b5e50] tracking-wide">
+                      {p.key === "rio" ? T.about.rioTagline : T.about.wclTagline}
+                    </p>
+                  </div>
+                  <div
+                    className="h-px flex-1 hidden sm:block"
+                    style={{ background: `linear-gradient(to right, ${p.accent}40, transparent)` }}
+                  />
+                  <p className="text-xs text-[#6b5e50] hidden md:block shrink-0">
+                    {p.key === "rio" ? T.about.rioDesc : T.about.wclDesc}
+                  </p>
+                  <ArrowRight
+                    className="h-4 w-4 shrink-0 ml-auto sm:ml-0 transition-all duration-300 group-hover:translate-x-1"
+                    style={{ color: "#3d3220" }}
+                  />
+                </div>
+
+                {/* Bottom accent line slide-in */}
+                <div
+                  className="absolute bottom-0 left-0 h-px w-0 group-hover:w-full transition-all duration-500"
+                  style={{ backgroundColor: p.accent, opacity: 0.4 }}
+                />
+              </a>
+            ))}
+          </div>
         </section>
       </div>
     </div>

@@ -64,6 +64,7 @@ export type Application = {
   status: "pending" | "accepted" | "rejected";
   created_at: string;
   notes?: string | null;
+  reviewed_by?: string | null;
 };
 
 export type RaidProgress = {

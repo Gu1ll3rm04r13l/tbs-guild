@@ -74,6 +74,7 @@ type WCLReport = {
 
 type WCLFight = {
   id: number;
+  encounterID: number;
   name: string;
   kill: boolean | null;
   bossPercentage: number; // 0–100 percent (0 = kill, 100 = full hp)
@@ -99,6 +100,8 @@ export type BossProgress = {
   killTimestamp: number | null; // epoch ms
   bestPercent: number | null;   // health % at best wipe; 0 if killed; null if never pulled
   pullCount: number;
+  encounterID: number | null;
+  firstKillReportCode: string | null;
 };
 
 export type RecentKill = {
@@ -111,6 +114,7 @@ export type WCLRaidData = {
   liveStatus: LiveRaidStatus;
   recentKills: RecentKill[];
   bossProgress: BossProgress[];
+  zoneName: string | null;
 };
 
 // ─── GraphQL queries ──────────────────────────────────────────────────────────
@@ -140,8 +144,12 @@ const REPORT_FIGHTS_QUERY = `
     reportData {
       report(code: $code) {
         startTime
+        zone {
+          name
+        }
         fights(killType: Encounters) {
           id
+          encounterID
           name
           kill
           bossPercentage
@@ -170,9 +178,9 @@ async function getRecentReports(): Promise<WCLReport[]> {
 async function getReportFights(
   code: string,
   revalidate: number
-): Promise<{ startTime: number; fights: WCLFight[] }> {
+): Promise<{ startTime: number; fights: WCLFight[]; zone: { name: string } | null }> {
   const data = await wclQuery<{
-    reportData: { report: { startTime: number; fights: WCLFight[] } };
+    reportData: { report: { startTime: number; fights: WCLFight[]; zone: { name: string } | null } };
   }>(REPORT_FIGHTS_QUERY, { code }, revalidate);
   return data.reportData.report;
 }
@@ -190,6 +198,7 @@ const EMPTY: WCLRaidData = {
   },
   recentKills: [],
   bossProgress: [],
+  zoneName: null,
 };
 
 export async function getWCLRaidData(): Promise<WCLRaidData> {
@@ -199,102 +208,57 @@ export async function getWCLRaidData(): Promise<WCLRaidData> {
 
     const [latest] = reports;
     const isActive = latest.endTime === 0;
+    const latestCacheTtl = isActive ? 60 : 300;
 
-    // Active raids get shorter cache to reflect pulls in near-real-time.
-    // Completed raids can be cached longer.
-    const fightsCacheTtl = isActive ? 60 : 300;
-
-    const { startTime: reportStart, fights } = await getReportFights(
-      latest.code,
-      fightsCacheTtl
+    // Fetch fights for all recent reports in parallel.
+    // Latest report: short cache if active. Older reports: always 5 min (completed).
+    const allFightData = await Promise.all(
+      reports.map((r, i) =>
+        getReportFights(r.code, i === 0 ? latestCacheTtl : 300).catch(() => null)
+      )
     );
 
-    const mythicFights = fights
-      .filter((f) => f.difficulty === MYTHIC_DIFFICULTY)
-      .sort((a, b) => a.startTime - b.startTime); // ensure chronological order
-
-    if (mythicFights.length === 0) {
+    const latestFightData = allFightData[0];
+    if (!latestFightData) {
       return {
         ...EMPTY,
         liveStatus: { ...EMPTY.liveStatus, isActive, reportCode: latest.code },
       };
     }
 
-    // ── Build per-boss map ────────────────────────────────────────────────────
-    const bossMap = new Map<string, { kills: WCLFight[]; wipes: WCLFight[] }>();
-    for (const f of mythicFights) {
-      if (!bossMap.has(f.name)) bossMap.set(f.name, { kills: [], wipes: [] });
-      const entry = bossMap.get(f.name)!;
+    // ── Live status (latest report only) ─────────────────────────────────────
+    const latestMythic = latestFightData.fights
+      .filter((f) => f.difficulty === MYTHIC_DIFFICULTY)
+      .sort((a, b) => a.startTime - b.startTime);
+
+    const latestBossMap = new Map<string, { kills: WCLFight[]; wipes: WCLFight[] }>();
+    for (const f of latestMythic) {
+      if (!latestBossMap.has(f.name)) latestBossMap.set(f.name, { kills: [], wipes: [] });
+      const entry = latestBossMap.get(f.name)!;
       if (f.kill) entry.kills.push(f);
       else entry.wipes.push(f);
     }
 
-    // ── Boss progress ─────────────────────────────────────────────────────────
-    const bossProgress: BossProgress[] = Array.from(bossMap.entries()).map(
-      ([name, { kills, wipes }]) => {
-        const killed = kills.length > 0;
-
-        const killTimestamp = killed
-          ? reportStart + Math.max(...kills.map((k) => k.startTime))
-          : null;
-
-        const bestWipe = wipes.reduce<WCLFight | null>(
-          (best, f) =>
-            f.bossPercentage != null &&
-            (!best || f.bossPercentage < best.bossPercentage)
-              ? f
-              : best,
-          null
-        );
-
-        return {
-          name,
-          killed,
-          killTimestamp,
-          bestPercent: killed ? 0 : bestWipe ? bestWipe.bossPercentage : null,
-          pullCount: kills.length + wipes.length,
-        };
-      }
-    );
-
-    // ── Recent kills ──────────────────────────────────────────────────────────
-    const recentKills: RecentKill[] = mythicFights
-      .filter((f) => f.kill)
-      .sort((a, b) => b.startTime - a.startTime)
-      .slice(0, 10)
-      .map((f) => ({
-        boss: f.name,
-        killTimestamp: reportStart + f.startTime,
-        reportCode: latest.code,
-      }));
-
-    // ── Live status ───────────────────────────────────────────────────────────
     let liveStatus: LiveRaidStatus;
-
-    if (isActive) {
-      // Current boss = last fight pulled that hasn't been killed yet
-      const lastFight = mythicFights[mythicFights.length - 1];
+    if (isActive && latestMythic.length > 0) {
+      const lastFight = latestMythic[latestMythic.length - 1];
       const currentBossName = lastFight.kill ? null : lastFight.name;
-
       let bestTry: number | null = null;
       let pullCount = 0;
 
       if (currentBossName) {
-        const entry = bossMap.get(currentBossName);
+        const entry = latestBossMap.get(currentBossName);
         if (entry) {
           pullCount = entry.kills.length + entry.wipes.length;
           const bestWipe = entry.wipes.reduce<WCLFight | null>(
             (best, f) =>
-              f.bossPercentage != null &&
-              (!best || f.bossPercentage < best.bossPercentage)
-                ? f
-                : best,
+              f.bossPercentage != null && (!best || f.bossPercentage < best.bossPercentage)
+                ? f : best,
             null
           );
           bestTry = bestWipe ? bestWipe.bossPercentage : null;
         }
       }
-
       liveStatus = {
         isActive: true,
         reportCode: latest.code,
@@ -314,7 +278,87 @@ export async function getWCLRaidData(): Promise<WCLRaidData> {
       };
     }
 
-    return { liveStatus, recentKills, bossProgress };
+    // ── Aggregate boss progress across ALL reports ────────────────────────────
+    type FightAbs = WCLFight & { absoluteStart: number; reportCode: string };
+    const aggMap = new Map<string, { kills: FightAbs[]; wipes: FightAbs[] }>();
+
+    for (let i = 0; i < reports.length; i++) {
+      const fd = allFightData[i];
+      if (!fd) continue;
+
+      const mythicFights = fd.fights
+        .filter((f) => f.difficulty === MYTHIC_DIFFICULTY)
+        .sort((a, b) => a.startTime - b.startTime);
+
+      for (const f of mythicFights) {
+        if (!aggMap.has(f.name)) aggMap.set(f.name, { kills: [], wipes: [] });
+        const entry = aggMap.get(f.name)!;
+        const fa: FightAbs = {
+          ...f,
+          absoluteStart: fd.startTime + f.startTime,
+          reportCode: reports[i].code,
+        };
+        if (f.kill) entry.kills.push(fa);
+        else entry.wipes.push(fa);
+      }
+    }
+
+    const bossProgress: BossProgress[] = Array.from(aggMap.entries()).map(
+      ([name, { kills, wipes }]) => {
+        const killed = kills.length > 0;
+        // First kill across all reports = minimum absolute timestamp
+        const firstKill = killed
+          ? kills.reduce((earliest, k) =>
+              k.absoluteStart < earliest.absoluteStart ? k : earliest
+            )
+          : null;
+
+        const bestWipe = wipes.reduce<FightAbs | null>(
+          (best, f) =>
+            f.bossPercentage != null && (!best || f.bossPercentage < best.bossPercentage)
+              ? f : best,
+          null
+        );
+
+        return {
+          name,
+          killed,
+          killTimestamp: firstKill?.absoluteStart ?? null,
+          bestPercent: killed ? 0 : bestWipe ? bestWipe.bossPercentage : null,
+          pullCount: kills.length + wipes.length,
+          encounterID: (kills[0] ?? wipes[0])?.encounterID ?? null,
+          firstKillReportCode: firstKill?.reportCode ?? null,
+        };
+      }
+    );
+
+    // Sort: killed first in chronological order, then un-killed
+    bossProgress.sort((a, b) => {
+      if (a.killed && b.killed) return (a.killTimestamp ?? 0) - (b.killTimestamp ?? 0);
+      if (a.killed) return -1;
+      if (b.killed) return 1;
+      return 0;
+    });
+
+    // ── Recent kills (across all reports, most recent first) ─────────────────
+    const recentKills: RecentKill[] = reports
+      .flatMap((r, i) => {
+        const fd = allFightData[i];
+        if (!fd) return [];
+        return fd.fights
+          .filter((f) => f.difficulty === MYTHIC_DIFFICULTY && f.kill)
+          .map((f) => ({
+            boss: f.name,
+            killTimestamp: fd.startTime + f.startTime,
+            reportCode: r.code,
+          }));
+      })
+      .sort((a, b) => b.killTimestamp - a.killTimestamp)
+      .slice(0, 10);
+
+    const zoneName = latestFightData.zone?.name ?? null;
+
+    return { liveStatus, recentKills, bossProgress, zoneName };
   } catch (err) {
     console.error("[WCL] getWCLRaidData failed:", err);
     return EMPTY;
@@ -380,6 +424,53 @@ export async function getCharacterWCLStats(
     return { avgParse, bestParse, wclProfileUrl };
   } catch {
     return { avgParse: null, bestParse: null, wclProfileUrl };
+  }
+}
+
+// ─── Guild Parses — batched single query ─────────────────────────────────────
+// One GraphQL request with N aliases instead of N individual requests.
+
+export type GuildParses = Record<string, number | null>; // characterName → avgParse
+
+export async function getGuildParses(
+  characterNames: string[]
+): Promise<GuildParses> {
+  if (!ZONE_ID || characterNames.length === 0) return {};
+
+  // GraphQL alias names must be /[_a-zA-Z][_a-zA-Z0-9]*/
+  const toAlias = (name: string) => `c_${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+
+  const fields = characterNames
+    .map(
+      (name) =>
+        `${toAlias(name)}: character(name: "${name}", serverSlug: $serverSlug, serverRegion: $serverRegion) { zoneRankings(zoneID: $zoneID, difficulty: 5) }`
+    )
+    .join("\n");
+
+  const query = `
+    query GuildParses($serverSlug: String!, $serverRegion: String!, $zoneID: Int!) {
+      characterData {
+        ${fields}
+      }
+    }
+  `;
+
+  try {
+    const data = await wclQuery<{
+      characterData: Record<string, { zoneRankings: { bestPerformanceAverage?: number } | null } | null>;
+    }>(query, { serverSlug: REALM_SLUG, serverRegion: REGION, zoneID: ZONE_ID }, 300);
+
+    const result: GuildParses = {};
+    for (const name of characterNames) {
+      const alias = toAlias(name);
+      const zr = data.characterData?.[alias]?.zoneRankings;
+      result[name] = zr?.bestPerformanceAverage != null
+        ? Math.round(zr.bestPerformanceAverage)
+        : null;
+    }
+    return result;
+  } catch {
+    return {};
   }
 }
 

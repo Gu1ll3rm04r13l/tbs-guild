@@ -25,8 +25,13 @@ export function DashboardClient({ initialApplications }: DashboardClientProps) {
       body: JSON.stringify({ status, notes: notes ?? null }),
     });
     if (res.ok) {
+      const data = await res.json();
       setApplications((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status, notes: notes ?? a.notes } : a))
+        prev.map((a) =>
+          a.id === id
+            ? { ...a, status, notes: notes ?? a.notes, reviewed_by: data.reviewed_by ?? a.reviewed_by }
+            : a
+        )
       );
     }
   }

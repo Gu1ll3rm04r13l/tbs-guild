@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Navbar } from "@/components/Navbar";
-import { createAdminClient } from "@/lib/supabase";
+import { LanguageProvider } from "@/components/LanguageProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,6 +24,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
     default: "The Burning Seagull — Ragnaros US",
     template: "%s | The Burning Seagull",
@@ -46,56 +47,29 @@ export const metadata: Metadata = {
   },
 };
 
-async function getRaidProgress() {
-  try {
-    const adminClient = createAdminClient();
-    const { data } = await adminClient
-      .from("raid_progress")
-      .select("*")
-      .order("bosses_down", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const progress = await getRaidProgress();
-
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${geistMono.variable} ${geist.variable} h-full`}
+      className={`${inter.variable} ${geistMono.variable} ${geist.variable} h-full scroll-smooth`}
     >
       <head>
-        <link rel="preconnect" href="https://raider.io" />
-        <link rel="preconnect" href="https://www.warcraftlogs.com" />
         <link rel="preconnect" href="https://render.worldofwarcraft.com" />
         <link rel="dns-prefetch" href="https://us.api.blizzard.com" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] antialiased">
+        <LanguageProvider>
         <SessionProvider>
-          <Navbar
-            progress={
-              progress
-                ? {
-                    raidName: progress.raid_name,
-                    bossesDown: progress.bosses_down,
-                    totalBosses: progress.total_bosses,
-                  }
-                : undefined
-            }
-          />
+          <Navbar />
           <main className="flex-1">{children}</main>
           <footer className="border-t border-[#2a2318] py-6 text-center text-xs text-[#6b5e50]">
             <span className="fire-text font-bold">The Burning Seagull</span>
             {" "}&copy; {new Date().getFullYear()} &mdash; Ragnaros US &mdash; World of Warcraft Guild
           </footer>
         </SessionProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -65,7 +65,6 @@ type FormData = {
   discordId: string;
   country: string;
   extraInfo: string;
-  ragnarosAlt: string;
 };
 
 const INITIAL: FormData = {
@@ -73,7 +72,7 @@ const INITIAL: FormData = {
   pastProgression: "", rioLink: "", logsLink: "", streamLink: "", uiUrl: "",
   altClassAvailability: "", whyTbs: "", howFound: "", howFoundOther: "",
   guildHistory: "", whyLeaving: "", hadImportantPosition: "", knowSomeone: "",
-  applicantBattleTag: "", discordId: "", country: "", extraInfo: "", ragnarosAlt: "",
+  applicantBattleTag: "", discordId: "", country: "", extraInfo: "",
 };
 
 type FormStatus = "idle" | "loading" | "success" | "error";
@@ -232,7 +231,6 @@ export function ApplicationForm() {
       discord_id: form.discordId,
       country: form.country || undefined,
       extra_info: form.extraInfo || undefined,
-      ragnaros_alt: form.ragnarosAlt || undefined,
     };
 
     try {
@@ -565,17 +563,6 @@ export function ApplicationForm() {
           value={form.extraInfo}
           onChange={handleInput("extraInfo")}
           rows={3}
-        />
-      </Field>
-
-      <Field
-        label="PJ en Ragnaros para notificación"
-        hint="En caso de que el pj con el que aplicas no esté en Ragnaros, creá un pj allí (Horda preferentemente) y dejá su nombre. Te mandaremos un correo al pj con el resultado de tu apply."
-      >
-        <Input
-          value={form.ragnarosAlt}
-          onChange={handleInput("ragnarosAlt")}
-          placeholder="Nombre del personaje en Ragnaros"
         />
       </Field>
 

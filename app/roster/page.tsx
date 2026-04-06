@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Users, AlertTriangle, Flame } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { RosterGrid } from "@/components/roster/RosterGrid";
+import { RosterHeader } from "@/components/roster/RosterHeader";
 import { getGuildRoster, getCharacterProfile, getCharacterMedia } from "@/lib/blizzard";
 import { getCharacterStats } from "@/lib/raiderio";
 import type { RosterMember } from "@/components/roster/RosterGrid";
@@ -12,7 +13,6 @@ export const metadata: Metadata = {
   description: "The Burning Seagull guild roster — live character data from Blizzard.",
 };
 
-// Guildmaster (0), Officer (1), Raider (4)
 const DISPLAY_RANKS = [0, 1, 4];
 const MAX_LEVEL = 80;
 
@@ -71,24 +71,9 @@ export default async function RosterPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Flame className="h-3.5 w-3.5 text-[#E8560A]" />
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-[#E8560A]">
-              Guild Roster
-            </p>
-          </div>
-          <h1 className="text-2xl font-black text-[#f5efe8] flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-[#6b5e50]" />
-            Active Members
-          </h1>
-        </div>
-        <p className="text-xs text-[#6b5e50] font-mono">
-          {members.length} members · updated hourly
-        </p>
-      </div>
+
+      {/* Header + Rankings toggle */}
+      <RosterHeader members={members} />
 
       {/* Top accent line */}
       <div className="h-px w-full bg-gradient-to-r from-[#E8560A]/40 via-[#D4960A]/20 to-transparent" />

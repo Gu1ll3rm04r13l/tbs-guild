@@ -98,8 +98,15 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
         {/* Right side: action buttons + status + delete + chevron */}
         <div className="flex items-center gap-2 shrink-0">
 
-          {/* StatusBadge */}
-          <StatusBadge status={app.status} />
+          {/* StatusBadge + reviewer */}
+          <div className="flex items-center gap-1.5">
+            <StatusBadge status={app.status} />
+            {app.reviewed_by && app.status !== "pending" && (
+              <span className="text-[10px] font-mono text-[#6b7280]">
+                por {app.reviewed_by.split("#")[0]}
+              </span>
+            )}
+          </div>
 
           {/* Delete — idle: icono papelera / confirm: advertencia inline */}
           {deleteStage === "idle" ? (

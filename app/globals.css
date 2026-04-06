@@ -104,3 +104,53 @@ body {
 main > * {
   animation: fade-in 0.25s ease-out both;
 }
+
+/* ── War Dispatch — stagger log entries ── */
+@keyframes log-entry {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── War Dispatch — fire bar slow movement ── */
+@keyframes fire-flow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.fire-bar-animated {
+  background: linear-gradient(
+    90deg,
+    #8b0000 0%,
+    #C41A00 15%,
+    #E8560A 35%,
+    #F0B830 50%,
+    #E8560A 65%,
+    #C41A00 80%,
+    #8b0000 100%
+  );
+  background-size: 200% 100%;
+  animation: fire-flow 3s linear infinite;
+}
+
+/* ── War Dispatch — tactical WCL button ── */
+.wcl-button {
+  color: #6b5e50;
+  border: 1px solid #2a2318;
+  background: transparent;
+  clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.wcl-button:hover {
+  color: #E8560A;
+  border-color: rgba(232, 86, 10, 0.5);
+  background: rgba(232, 86, 10, 0.06);
+  box-shadow: 0 0 16px rgba(232, 86, 10, 0.2);
+}
+
+/* ── War Dispatch — aggro pulse (wall boss) ── */
+@keyframes aggro-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(196,26,0,0.3), 0 0 30px rgba(196,26,0,0.1), inset 0 0 20px rgba(196,26,0,0.03); }
+  50%       { box-shadow: 0 0 20px rgba(232,86,10,0.5), 0 0 50px rgba(196,26,0,0.2), inset 0 0 30px rgba(196,26,0,0.06); }
+}
+.aggro-glow {
+  animation: aggro-pulse 1.8s ease-in-out infinite;
+}

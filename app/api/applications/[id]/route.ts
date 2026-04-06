@@ -28,17 +28,22 @@ export async function PATCH(
     return Response.json({ error: "Invalid status" }, { status: 422 });
   }
 
+  const battleTag = (session.user as { battleTag?: string })?.battleTag ?? session.user?.name ?? null;
+  const mainCharName = (session.user as { mainCharName?: string | null })?.mainCharName ?? null;
+  const reviewerName = mainCharName ?? battleTag?.split("#")[0] ?? null;
+  const reviewed_by = status === "pending" ? null : reviewerName;
+
   const adminClient = createAdminClient();
   const { error } = await adminClient
     .from("applications")
-    .update({ status, notes: notes ?? null })
+    .update({ status, notes: notes ?? null, reviewed_by })
     .eq("id", id);
 
   if (error) {
     return Response.json({ error: "Update failed" }, { status: 500 });
   }
 
-  return Response.json({ success: true });
+  return Response.json({ success: true, reviewed_by });
 }
 
 export async function DELETE(
