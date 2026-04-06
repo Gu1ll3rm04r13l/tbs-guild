@@ -3,6 +3,73 @@ import { createAdminClient } from "@/lib/supabase";
 
 const OFFICER_RANKS = ["guildmaster", "officer", "class-lead"];
 
+// Numeric guild rank → name mapping (rank 0 = GM, always)
+const RANK_INDEX_TO_NAME: Record<number, string> = {
+  0: "guildmaster",
+  1: "officer",
+  2: "class-lead",
+};
+
+/**
+ * Fetches the user's WoW characters (via their OAuth access token),
+ * cross-references with the guild roster, and returns:
+ *   - rank name string → character is in the guild
+ *   - null             → character is NOT in the guild (or not on realm)
+ *   - undefined        → API call failed; caller should skip updating rank
+ */
+async function detectGuildRank(accessToken: string): Promise<string | null | undefined> {
+  const REGION = process.env.BLIZZARD_REGION ?? "us";
+  const REALM_SLUG = process.env.BLIZZARD_REALM_SLUG ?? "";
+
+  try {
+    // 1. Fetch the Battle.net account's WoW characters
+    const charsRes = await fetch(
+      `https://${REGION}.api.blizzard.com/profile/user/wow?namespace=profile-${REGION}&locale=en_US`,
+      { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }
+    );
+    if (!charsRes.ok) {
+      console.error("[auth] detectGuildRank: /profile/user/wow returned", charsRes.status);
+      return undefined; // API error — don't wipe existing rank
+    }
+    const charsData = await charsRes.json();
+    const characters: { name: string; realm: { slug: string } }[] = (
+      charsData.wow_accounts ?? []
+    ).flatMap(
+      (acc: { characters?: { name: string; realm: { slug: string } }[] }) =>
+        acc.characters ?? []
+    ).filter((c: { realm: { slug: string } }) => c.realm.slug === REALM_SLUG);
+
+    if (!characters.length) return null; // No characters on guild realm
+
+    // 2. Fetch guild roster (uses client-credentials + ISR cache)
+    const { getGuildRoster } = await import("@/lib/blizzard");
+    const roster = await getGuildRoster();
+    if (!roster.length) {
+      console.error("[auth] detectGuildRank: guild roster empty or unavailable");
+      return undefined; // Can't verify — don't wipe rank
+    }
+
+    // 3. Find the highest rank (lowest index) among the user's characters
+    let bestRankIndex: number | null = null;
+    for (const char of characters) {
+      const member = roster.find(
+        (m) => m.character.name.toLowerCase() === char.name.toLowerCase()
+      );
+      if (member !== undefined) {
+        if (bestRankIndex === null || member.rank < bestRankIndex) {
+          bestRankIndex = member.rank;
+        }
+      }
+    }
+
+    if (bestRankIndex === null) return null; // Not in guild
+    return RANK_INDEX_TO_NAME[bestRankIndex] ?? `rank-${bestRankIndex}`;
+  } catch (err) {
+    console.error("[auth] detectGuildRank error:", err);
+    return undefined; // Unknown error — don't wipe rank
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     {
@@ -75,10 +142,16 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       try {
         const adminClient = createAdminClient();
         const battleTag = (user as { battleTag?: string }).battleTag ?? user.name ?? "";
+
+        // Detect guild rank from Blizzard API using the fresh OAuth access token
+        const accessToken = account?.access_token;
+        const detectedRank = accessToken
+          ? await detectGuildRank(accessToken)
+          : undefined;
 
         const { data: existing } = await adminClient
           .from("profiles")
@@ -87,15 +160,21 @@ export const authOptions: NextAuthOptions = {
           .maybeSingle();
 
         if (!existing) {
-          // Use a proper UUID — Battle.net IDs are numeric, not UUIDs
+          // New user — insert with detected rank (may be null if not in guild)
           const { randomUUID } = await import("crypto");
           await adminClient.from("profiles").insert({
             id: randomUUID(),
             battle_tag: battleTag,
-            guild_rank: null,
+            guild_rank: detectedRank ?? null,
             main_char_name: null,
             avatar_url: null,
           });
+        } else if (detectedRank !== undefined) {
+          // Existing user — sync rank on every login (undefined = API error, skip update)
+          await adminClient
+            .from("profiles")
+            .update({ guild_rank: detectedRank })
+            .eq("battle_tag", battleTag);
         }
       } catch (err) {
         console.error("[auth] signIn Supabase error:", err);
