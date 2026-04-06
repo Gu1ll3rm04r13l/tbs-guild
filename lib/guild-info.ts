@@ -3,7 +3,7 @@ import { createAdminClient } from "./supabase";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type WeLookForData    = { items: string[] };
-export type ScheduleData     = { days: string; server_time: string; tz_ar_uy_cl: string; tz_pe_co: string; tz_mx: string; hours_note: string };
+export type ScheduleData     = { days: string; server_time: string; tz_ar_uy: string; tz_cl: string; tz_pe_co: string; tz_mx: string; hours_note: string };
 export type AddonsData       = { items: string[] };
 export type RequirementsData = { items: { title: string; text: string }[] };
 export type CuttingEdgesData = { entries: { xpac: string; raids: string }[] };
@@ -101,7 +101,8 @@ export const GUILD_INFO_DEFAULTS: GuildInfoData = {
   schedule: {
     days:        "Lunes · Miércoles · Jueves",
     server_time: "19:00 – 22:00 ST",
-    tz_ar_uy_cl: "🇦🇷 🇺🇾 🇨🇱 21:00 – 00:00",
+    tz_ar_uy:    "🇦🇷 🇺🇾 21:00 – 00:00",
+    tz_cl:       "🇨🇱 21:00 – 00:00",
     tz_pe_co:    "🇵🇪 🇨🇴 19:00 – 22:00",
     tz_mx:       "🇲🇽 18:00 – 21:00",
     hours_note:  "3 hs/día · 9 hs semanales · Sin días extra, nunca.",

@@ -379,10 +379,16 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
       {editing ? (
         <>
           <div className="space-y-2">
-            {(["days", "server_time", "tz_ar_uy_cl", "tz_pe_co", "tz_mx", "hours_note"] as const).map((field) => (
+            {(["days", "server_time", "tz_ar_uy", "tz_cl", "tz_pe_co", "tz_mx", "hours_note"] as const).map((field) => (
               <div key={field}>
                 <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">
-                  {field === "days" ? "Días" : field === "server_time" ? "Server time" : field === "hours_note" ? "Nota de horas" : field}
+                  {field === "days" ? "Días"
+                    : field === "server_time" ? "Server time"
+                    : field === "tz_ar_uy"    ? "TZ · AR / UY"
+                    : field === "tz_cl"       ? "TZ · CL (cambia con horario de verano)"
+                    : field === "tz_pe_co"    ? "TZ · PE / CO"
+                    : field === "tz_mx"       ? "TZ · MX"
+                    : "Nota de horas"}
                 </p>
                 <input
                   value={draft[field]}
@@ -399,7 +405,8 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
           <p className="font-semibold text-[#f5efe8]">{data.days}</p>
           <p className="font-mono text-[#E8560A] text-base font-bold">{data.server_time}</p>
           <div className="pt-1 space-y-0.5 text-xs text-[#6b5e50]">
-            <p>{data.tz_ar_uy_cl}</p>
+            <p>{data.tz_ar_uy}</p>
+            <p>{data.tz_cl}</p>
             <p>{data.tz_pe_co}</p>
             <p>{data.tz_mx}</p>
           </div>
