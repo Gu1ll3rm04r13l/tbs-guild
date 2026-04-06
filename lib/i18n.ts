@@ -43,6 +43,7 @@ export const t = {
       recruitment: "Reclutamiento",
       myProfile: "Mi perfil",
       unlinked: "Sin vincular",
+      signOut: "Cerrar sesión",
     },
     roster: {
       eyebrow: "Guild Roster",
@@ -134,6 +135,7 @@ export const t = {
       recruitment: "Recruitment",
       myProfile: "My profile",
       unlinked: "Unlinked",
+      signOut: "Sign out",
     },
     roster: {
       eyebrow: "Guild Roster",

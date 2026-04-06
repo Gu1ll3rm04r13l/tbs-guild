@@ -218,7 +218,7 @@ export function Navbar() {
                         className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-[#b8a898] hover:bg-[#1a1710] hover:text-[#f5efe8] transition-colors"
                       >
                         <LogOut className="h-3.5 w-3.5 text-[#6b5e50]" />
-                        Sign out
+                        {T.nav.signOut}
                       </button>
                     </div>
                   </div>
