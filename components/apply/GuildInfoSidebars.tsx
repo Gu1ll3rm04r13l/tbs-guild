@@ -371,6 +371,13 @@ function WeLookForCard({ initial, isOfficer }: { initial: WeLookForData; isOffic
   );
 }
 
+const TZ_ROWS = [
+  { key: "tz_ar_uy" as const, flags: "🇦🇷 🇺🇾", label: "AR / UY" },
+  { key: "tz_cl"    as const, flags: "🇨🇱",       label: "CL (cambia con horario de verano)" },
+  { key: "tz_pe_co" as const, flags: "🇵🇪 🇨🇴", label: "PE / CO" },
+  { key: "tz_mx"    as const, flags: "🇲🇽",       label: "MX" },
+];
+
 function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer?: boolean }) {
   const { data, draft, setDraft, editing, saving, error, startEdit, cancelEdit, save } = useEditState(initial);
 
@@ -379,24 +386,31 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
       {editing ? (
         <>
           <div className="space-y-2">
-            {(["days", "server_time", "tz_ar_uy", "tz_cl", "tz_pe_co", "tz_mx", "hours_note"] as const).map((field) => (
-              <div key={field}>
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">Días</p>
+              <input value={draft.days} className={inputCls} onChange={(e) => setDraft({ ...draft, days: e.target.value })} />
+            </div>
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">Server time</p>
+              <input value={draft.server_time} className={inputCls} onChange={(e) => setDraft({ ...draft, server_time: e.target.value })} />
+            </div>
+            {TZ_ROWS.map(({ key, flags, label }) => (
+              <div key={key}>
                 <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">
-                  {field === "days" ? "Días"
-                    : field === "server_time" ? "Server time"
-                    : field === "tz_ar_uy"    ? "TZ · AR / UY"
-                    : field === "tz_cl"       ? "TZ · CL (cambia con horario de verano)"
-                    : field === "tz_pe_co"    ? "TZ · PE / CO"
-                    : field === "tz_mx"       ? "TZ · MX"
-                    : "Nota de horas"}
+                  {flags} {label}
                 </p>
                 <input
-                  value={draft[field]}
+                  value={draft[key]}
+                  placeholder="HH:MM – HH:MM"
                   className={inputCls}
-                  onChange={(e) => setDraft({ ...draft, [field]: e.target.value })}
+                  onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
                 />
               </div>
             ))}
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">Nota de horas</p>
+              <input value={draft.hours_note} className={inputCls} onChange={(e) => setDraft({ ...draft, hours_note: e.target.value })} />
+            </div>
           </div>
           <SaveBar onSave={() => save("schedule", draft)} onCancel={cancelEdit} saving={saving} error={error} />
         </>
@@ -404,11 +418,12 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
         <div className="space-y-2 text-sm text-[#b8a898]">
           <p className="font-semibold text-[#f5efe8]">{data.days}</p>
           <p className="font-mono text-[#E8560A] text-base font-bold">{data.server_time}</p>
-          <div className="pt-1 space-y-0.5 text-xs text-[#6b5e50]">
-            <p>{data.tz_ar_uy}</p>
-            <p>{data.tz_cl}</p>
-            <p>{data.tz_pe_co}</p>
-            <p>{data.tz_mx}</p>
+          <div className="pt-1 space-y-1 text-xs text-[#6b5e50]">
+            {TZ_ROWS.map(({ key, flags }) => (
+              <p key={key}>
+                <span className="mr-1.5">{flags}</span>{data[key]}
+              </p>
+            ))}
           </div>
           <p className="text-xs text-[#6b5e50] pt-1 leading-snug">{data.hours_note}</p>
         </div>
