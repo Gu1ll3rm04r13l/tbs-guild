@@ -371,12 +371,24 @@ function WeLookForCard({ initial, isOfficer }: { initial: WeLookForData; isOffic
   );
 }
 
-const TZ_ROWS = [
-  { key: "tz_ar_uy" as const, flags: "🇦🇷 🇺🇾", label: "AR / UY" },
-  { key: "tz_cl"    as const, flags: "🇨🇱",       label: "CL (cambia con horario de verano)" },
-  { key: "tz_pe_co" as const, flags: "🇵🇪 🇨🇴", label: "PE / CO" },
-  { key: "tz_mx"    as const, flags: "🇲🇽",       label: "MX" },
+const TZ_ROWS: { key: "tz_ar_uy" | "tz_cl" | "tz_pe_co" | "tz_mx"; countries: string[]; label: string }[] = [
+  { key: "tz_ar_uy", countries: ["ar", "uy"], label: "AR / UY" },
+  { key: "tz_cl",    countries: ["cl"],        label: "CL" },
+  { key: "tz_pe_co", countries: ["pe", "co"], label: "PE / CO" },
+  { key: "tz_mx",    countries: ["mx"],        label: "MX" },
 ];
+
+function FlagImg({ code }: { code: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/16x12/${code}.png`}
+      alt={code.toUpperCase()}
+      width={16}
+      height={12}
+      className="rounded-[1px] inline-block"
+    />
+  );
+}
 
 function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer?: boolean }) {
   const { data, draft, setDraft, editing, saving, error, startEdit, cancelEdit, save } = useEditState(initial);
@@ -394,10 +406,11 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
               <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">Server time</p>
               <input value={draft.server_time} className={inputCls} onChange={(e) => setDraft({ ...draft, server_time: e.target.value })} />
             </div>
-            {TZ_ROWS.map(({ key, flags, label }) => (
+            {TZ_ROWS.map(({ key, countries, label }) => (
               <div key={key}>
-                <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5">
-                  {flags} {label}
+                <p className="text-[9px] font-mono uppercase tracking-wider text-[#3d3220] mb-0.5 flex items-center gap-1">
+                  <span className="flex gap-0.5">{countries.map((c) => <FlagImg key={c} code={c} />)}</span>
+                  {label}
                 </p>
                 <input
                   value={draft[key]}
@@ -418,10 +431,13 @@ function ScheduleCard({ initial, isOfficer }: { initial: ScheduleData; isOfficer
         <div className="space-y-2 text-sm text-[#b8a898]">
           <p className="font-semibold text-[#f5efe8]">{data.days}</p>
           <p className="font-mono text-[#E8560A] text-base font-bold">{data.server_time}</p>
-          <div className="pt-1 space-y-1 text-xs text-[#6b5e50]">
-            {TZ_ROWS.map(({ key, flags }) => (
-              <p key={key}>
-                <span className="mr-1.5">{flags}</span>{data[key]}
+          <div className="pt-1 space-y-1.5 text-xs text-[#6b5e50]">
+            {TZ_ROWS.map(({ key, countries }) => (
+              <p key={key} className="flex items-center gap-1.5">
+                <span className="flex gap-0.5 shrink-0">
+                  {countries.map((c) => <FlagImg key={c} code={c} />)}
+                </span>
+                {data[key]}
               </p>
             ))}
           </div>
