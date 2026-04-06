@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "./StatusBadge";
 import { getClassColor } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n";
 import type { Application } from "@/lib/supabase";
 
 type ApplicantRowProps = {
@@ -19,6 +21,8 @@ type ApplicantRowProps = {
 };
 
 export function ApplicantRow({ application: app, onStatusChange, onDelete }: ApplicantRowProps) {
+  const { lang } = useLanguage();
+  const TR = t[lang].recruits;
   const [expanded, setExpanded] = useState(false);
   const [notes, setNotes] = useState(app.notes ?? "");
   const [loading, setLoading] = useState(false);
@@ -103,7 +107,7 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
             <StatusBadge status={app.status} />
             {app.reviewed_by && app.status !== "pending" && (
               <span className="text-[10px] font-mono text-[#6b7280]">
-                por {app.reviewed_by.split("#")[0]}
+                {TR.reviewedBy} {app.reviewed_by.split("#")[0]}
               </span>
             )}
           </div>
@@ -113,7 +117,7 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
             <button
               onClick={() => setDeleteStage("confirm")}
               className="text-[#6b7280] hover:text-red-400 transition-colors p-1 rounded"
-              title="Eliminar postulación"
+              title={TR.deleteTitle}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -121,20 +125,20 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
             <div className="flex items-center gap-1.5 rounded border border-red-800/60 bg-red-950/40 px-2 py-1">
               <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />
               <span className="text-[10px] text-red-300 whitespace-nowrap">
-                Se eliminará permanentemente
+                {TR.deleteWarning}
               </span>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
                 className="text-[10px] font-semibold text-red-400 hover:text-red-300 transition-colors ml-1 disabled:opacity-50"
               >
-                {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirmar"}
+                {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : TR.confirm}
               </button>
               <button
                 onClick={() => setDeleteStage("idle")}
                 className="text-[10px] text-[#6b7280] hover:text-[#a3a3a3] transition-colors"
               >
-                Cancelar
+                {TR.cancel}
               </button>
             </div>
           )}
@@ -158,16 +162,16 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
             {app.status === "pending" && (
               <>
                 <Button variant="success" size="sm" disabled={loading} onClick={() => handleStatus("accepted")}>
-                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Aceptar"}
+                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : TR.accept}
                 </Button>
                 <Button variant="destructive" size="sm" disabled={loading} onClick={() => handleStatus("rejected")}>
-                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Rechazar"}
+                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : TR.reject}
                 </Button>
               </>
             )}
             {app.status !== "pending" && (
               <Button variant="outline" size="sm" disabled={loading} onClick={() => handleStatus("pending")}>
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Volver a Pendiente"}
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : TR.backToPending}
               </Button>
             )}
           </div>
@@ -189,7 +193,7 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
             {app.ui_screenshot_url && (
               <a href={app.ui_screenshot_url} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs text-[#a3a3a3] hover:underline">
-                <ExternalLink className="h-3 w-3" />Captura de UI
+                <ExternalLink className="h-3 w-3" />{TR.uiCapture}
               </a>
             )}
             {app.stream_link && (
@@ -203,48 +207,32 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
           {/* Datos rápidos */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
             {app.realm && <InfoItem label="Realm" value={app.realm} />}
-            {app.country && <InfoItem label="País" value={app.country} />}
-            {app.alt_class_availability && <InfoItem label="Alt Disponible" value={app.alt_class_availability} />}
-            {app.ragnaros_alt && <InfoItem label="Alt en Ragnaros" value={app.ragnaros_alt} />}
+            {app.country && <InfoItem label={TR.country} value={app.country} />}
+            {app.alt_class_availability && <InfoItem label={TR.altAvail} value={app.alt_class_availability} />}
+            {app.ragnaros_alt && <InfoItem label={TR.ragnarosAlt} value={app.ragnaros_alt} />}
           </div>
 
           {/* Respuestas del cuestionario */}
           <div className="space-y-3">
-            {app.past_progression && (
-              <QuestionBlock label="Progresión Pasada" value={app.past_progression} />
-            )}
-            {app.why_tbs && (
-              <QuestionBlock label="¿Por qué TBS?" value={app.why_tbs} />
-            )}
-            {app.guild_history && (
-              <QuestionBlock label="Guilds Anteriores" value={app.guild_history} />
-            )}
-            {app.why_leaving && (
-              <QuestionBlock label="¿Por qué me fui?" value={app.why_leaving} />
-            )}
-            {app.had_important_position && (
-              <QuestionBlock label="¿Ocupé rangos relevantes?" value={app.had_important_position} />
-            )}
-            {app.know_someone && (
-              <QuestionBlock label="¿Conozco a alguien en TBS?" value={app.know_someone} />
-            )}
-            {app.how_found && (
-              <QuestionBlock label="¿Cómo conocí TBS?" value={app.how_found} />
-            )}
-            {app.extra_info && (
-              <QuestionBlock label="Información Adicional" value={app.extra_info} />
-            )}
+            {app.past_progression && <QuestionBlock label={TR.pastProgression} value={app.past_progression} />}
+            {app.why_tbs         && <QuestionBlock label={TR.whyTbs}          value={app.why_tbs} />}
+            {app.guild_history   && <QuestionBlock label={TR.guildHistory}    value={app.guild_history} />}
+            {app.why_leaving     && <QuestionBlock label={TR.whyLeaving}      value={app.why_leaving} />}
+            {app.had_important_position && <QuestionBlock label={TR.importantPosition} value={app.had_important_position} />}
+            {app.know_someone    && <QuestionBlock label={TR.knowSomeone}     value={app.know_someone} />}
+            {app.how_found       && <QuestionBlock label={TR.howFound}        value={app.how_found} />}
+            {app.extra_info      && <QuestionBlock label={TR.extraInfo}       value={app.extra_info} />}
           </div>
 
           {/* Notas internas */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
-              Notas Internas
+              {TR.internalNotes}
             </label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Comentarios de oficiales..."
+              placeholder={TR.notesPlaceholder}
               rows={3}
             />
             <div className="flex justify-end">
@@ -252,7 +240,7 @@ export function ApplicantRow({ application: app, onStatusChange, onDelete }: App
                 {savingNotes
                   ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
                   : <Save className="h-3 w-3 mr-1.5" />}
-                Guardar Notas
+                {TR.saveNotes}
               </Button>
             </div>
           </div>

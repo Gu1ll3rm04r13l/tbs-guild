@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import type { Metadata } from "next";
-import { LayoutDashboard } from "lucide-react";
 import { authOptions, OFFICER_RANKS } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase";
 import { DashboardClient } from "./DashboardClient";
 import type { Application } from "@/lib/supabase";
+import { RecruitsHeader } from "./RecruitsHeader";
 
 export const metadata: Metadata = {
   title: "Reclutamiento",
@@ -39,14 +39,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 space-y-8">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="text-xs font-mono uppercase tracking-widest text-[#c9a84c]">Solo Oficiales</p>
-        <h1 className="text-2xl font-bold text-[#f5f5f5] flex items-center gap-2.5">
-          <LayoutDashboard className="h-6 w-6 text-[#6b7280]" />
-          Panel de Reclutamiento
-        </h1>
-      </div>
+      <RecruitsHeader />
 
       <DashboardClient initialApplications={applications} />
     </div>
