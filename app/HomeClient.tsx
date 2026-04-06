@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, Shield, BarChart2, Pencil, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n";
 import type { HomeContentData } from "@/lib/guild-info";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@ export function HomeClient({
 }) {
   const { lang } = useLanguage();
   const L = lang; // "es" | "en"
+  const TR = t[L];
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [content, setContent]   = useState(initial);
@@ -192,8 +194,8 @@ export function HomeClient({
             </div>
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button asChild size="lg"><Link href="/apply">Postúlate <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild variant="outline" size="lg"><Link href="/roster">Ver Roster</Link></Button>
+              <Button asChild size="lg"><Link href="/apply">{TR.hero.applyCta} <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild variant="outline" size="lg"><Link href="/roster">{TR.hero.rosterCta}</Link></Button>
             </div>
           </div>
         </div>
@@ -207,7 +209,7 @@ export function HomeClient({
           <div className="flex items-center gap-3 mb-12">
             <div className="h-px w-6 bg-[#E8560A]" />
             <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#6b5e50]">
-              {L === "es" ? "Sobre Nosotros" : "About Us"}
+              {TR.about.sectionLabel}
             </h2>
             <div className="h-px flex-1 bg-gradient-to-r from-[#3d3220] to-transparent" />
           </div>
@@ -298,7 +300,7 @@ export function HomeClient({
             <div className="flex items-center gap-3 mb-6">
               <div className="h-px w-4 bg-[#3d3220]" />
               <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#3d3220]">
-                {L === "es" ? "Encuéntranos en" : "Find us at"}
+                {TR.about.findUsAt}
               </p>
               {isOfficer && <EditBar editing={linkEdit} saving={linkSaving}
                 onEdit={() => { setLinkDraft(content); setLinkEdit(true); }}
