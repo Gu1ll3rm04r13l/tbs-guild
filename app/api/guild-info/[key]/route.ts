@@ -7,6 +7,7 @@ import type { GuildInfoKey } from "@/lib/guild-info";
 const VALID_KEYS: GuildInfoKey[] = [
   "we_look_for", "schedule", "addons", "requirements",
   "cutting_edges", "objectives", "loot_system", "roster_info", "ambiente",
+  "home_content",
 ];
 
 export async function PATCH(

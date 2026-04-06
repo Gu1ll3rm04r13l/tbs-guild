@@ -12,21 +12,82 @@ export type LootSystemData   = { items: { label: string; desc: string }[] };
 export type RosterInfoData   = { main: string; trial: string };
 export type AmbienteData     = { text: string; streamers: { name: string; url: string }[] };
 
+// ─── Home page editable content ──────────────────────────────────────────────
+
+type BilingualString = { es: string; en: string };
+type BilingualValue  = { title: BilingualString; desc: BilingualString };
+
+export type HomeContentData = {
+  hero_eyebrow:    BilingualString;
+  hero_description: BilingualString;
+  about_heading1:  BilingualString;
+  about_heading2:  BilingualString;
+  about_p1:        BilingualString;
+  about_p2:        BilingualString;
+  about_p3:        BilingualString;
+  about_values:    BilingualValue[];
+  rio_tagline:     BilingualString;
+  rio_desc:        BilingualString;
+  wcl_tagline:     BilingualString;
+  wcl_desc:        BilingualString;
+};
+
 export type GuildInfoData = {
-  we_look_for:  WeLookForData;
-  schedule:     ScheduleData;
-  addons:       AddonsData;
-  requirements: RequirementsData;
+  we_look_for:   WeLookForData;
+  schedule:      ScheduleData;
+  addons:        AddonsData;
+  requirements:  RequirementsData;
   cutting_edges: CuttingEdgesData;
-  objectives:   ObjectivesData;
-  loot_system:  LootSystemData;
-  roster_info:  RosterInfoData;
-  ambiente:     AmbienteData;
+  objectives:    ObjectivesData;
+  loot_system:   LootSystemData;
+  roster_info:   RosterInfoData;
+  ambiente:      AmbienteData;
+  home_content:  HomeContentData;
 };
 
 export type GuildInfoKey = keyof GuildInfoData;
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
+
+export const HOME_CONTENT_DEFAULT: HomeContentData = {
+  hero_eyebrow:     { es: "Progresión Mítica · Ragnaros US",      en: "Mythic Progression · Ragnaros US" },
+  hero_description: {
+    es: "Raideo Mítico Semi-Tryhard. Progresión seria, sin excusas en noches de banda. Buen ambiente, altos estándares.",
+    en: "Semi-tryhard Mythic raiding. Serious progression, no excuses on raid nights. Good vibes, high standards.",
+  },
+  about_heading1: { es: "Progresión seria.",                    en: "Serious progression." },
+  about_heading2: { es: "Sin perder de vista que es un juego.", en: "Without losing sight of the game." },
+  about_p1: {
+    es: "The Burning Seagull es una hermandad Mítica Semi-Tryhard en Ragnaros US. Llevamos varios tiers juntos y la dinámica es clara: los días de banda son días de trabajo. Preparación, asistencia y actitud. Sin excusas.",
+    en: "The Burning Seagull is a Semi-Tryhard Mythic raiding guild on Ragnaros US. We've been pushing together for several tiers and the dynamic is simple: raid nights are work nights. Preparation, attendance, and attitude. No excuses.",
+  },
+  about_p2: {
+    es: "Fuera del raid somos personas normales. No tenemos drama de hermandad, no micromanejamos tu vida y no te pedimos que vivas en el juego. Lo que sí pedimos es que cuando estés en la incursión, estés al 100%.",
+    en: "Outside of raid we're normal people. No guild drama, no micromanaging your life, no requirement to live in the game. What we do ask is that when you're in the raid, you're at 100%.",
+  },
+  about_p3: {
+    es: "Si buscas una hermandad que progrese en serio pero donde también puedas ser tú mismo, este es tu sitio.",
+    en: "If you're looking for a guild that progresses seriously but where you can also just be yourself — this is your place.",
+  },
+  about_values: [
+    {
+      title: { es: "Progresión Mítica",            en: "Mythic Progression" },
+      desc:  { es: "Empujamos lo que el tier permite. No somos world first, pero tampoco conformistas.", en: "We push as far as the tier allows. Not world-first, but never complacent." },
+    },
+    {
+      title: { es: "Tres noches, plena concentración", en: "Three nights, full focus" },
+      desc:  { es: "Schedule ajustado, cada hora cuenta. Exigimos consumibles, preparación y actitud.", en: "Tight schedule, every hour counts. We expect consumables, prep, and mindset." },
+    },
+    {
+      title: { es: "Comunidad real",   en: "Real community" },
+      desc:  { es: "Personas primero. Llevamos años juntos porque nos llevamos bien, no solo porque progresamos.", en: "People first. We've stayed together for years because we actually get along." },
+    },
+  ],
+  rio_tagline: { es: "Rankings · Progresión Mítica · Scores M+",   en: "Rankings · Mythic Progression · M+ Scores" },
+  rio_desc:    { es: "Perfil de hermandad, rankings en servidor y estadísticas de miembros.", en: "Our guild profile, server rankings and member statistics." },
+  wcl_tagline: { es: "Logs de Banda · Parses · Rankings de Boss",  en: "Raid Logs · Parses · Boss Rankings" },
+  wcl_desc:    { es: "Historial completo de logs, rendimiento individual y análisis de cada encounter.", en: "Full log history, individual performance and fight breakdowns." },
+};
 
 export const GUILD_INFO_DEFAULTS: GuildInfoData = {
   we_look_for: {
@@ -89,6 +150,7 @@ export const GUILD_INFO_DEFAULTS: GuildInfoData = {
       { name: "Wor (DPS · Raider)",              url: "https://www.twitch.tv/nozit0" },
     ],
   },
+  home_content: HOME_CONTENT_DEFAULT,
 };
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
