@@ -198,9 +198,9 @@ export function Navbar() {
                         onClick={() => setProfileOpen(false)}
                       >
                         <User className="h-3.5 w-3.5 text-[#F0B830]" />
-                        Mi perfil
+                        {T.nav.myProfile}
                         {!mainCharName && (
-                          <span className="ml-auto text-[9px] font-mono text-[#E8560A] border border-[#E8560A]/30 rounded px-1">Sin vincular</span>
+                          <span className="ml-auto text-[9px] font-mono text-[#E8560A] border border-[#E8560A]/30 rounded px-1">{T.nav.unlinked}</span>
                         )}
                       </Link>
                       {isOfficer && (

@@ -41,6 +41,8 @@ export const t = {
       roster: "Roster",
       dashboard: "Dashboard",
       recruitment: "Reclutamiento",
+      myProfile: "Mi perfil",
+      unlinked: "Sin vincular",
     },
     roster: {
       eyebrow: "Guild Roster",
@@ -130,6 +132,8 @@ export const t = {
       roster: "Roster",
       dashboard: "Dashboard",
       recruitment: "Recruitment",
+      myProfile: "My profile",
+      unlinked: "Unlinked",
     },
     roster: {
       eyebrow: "Guild Roster",
