@@ -128,7 +128,7 @@ export const t = {
       reviewedBy: "by",
     },
     nav: {
-      about: "About",
+      about: "About us",
       apply: "Apply",
       roster: "Roster",
       dashboard: "Dashboard",
