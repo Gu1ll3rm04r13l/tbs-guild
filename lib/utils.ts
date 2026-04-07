@@ -21,32 +21,8 @@ export const WOW_CLASS_COLORS: Record<string, string> = {
   warrior: "#C69B3A",
 };
 
-export const WOW_CLASS_LABELS: Record<string, string> = {
-  "death-knight": "Death Knight",
-  "demon-hunter": "Demon Hunter",
-  druid: "Druid",
-  evoker: "Evoker",
-  hunter: "Hunter",
-  mage: "Mage",
-  monk: "Monk",
-  paladin: "Paladin",
-  priest: "Priest",
-  rogue: "Rogue",
-  shaman: "Shaman",
-  warlock: "Warlock",
-  warrior: "Warrior",
-};
 
 export function getClassColor(className: string): string {
   const key = className.toLowerCase().replace(/\s+/g, "-");
   return WOW_CLASS_COLORS[key] ?? "#b8a898";
-}
-
-export function getRoleIcon(role: string): string {
-  switch (role.toLowerCase()) {
-    case "tank": return "🛡️";
-    case "healer": return "💚";
-    case "dps": return "⚔️";
-    default: return "•";
-  }
 }
