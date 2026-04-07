@@ -57,12 +57,15 @@ export async function notifyNewApplication(app: Application): Promise<void> {
   };
 
   try {
-    await fetch(webhookUrl, {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ embeds: [embed] }),
     });
-  } catch {
-    // Non-blocking — don't fail the request if Discord is down
+    if (!res.ok) {
+      console.error(`[discord] webhook failed: ${res.status} ${await res.text()}`);
+    }
+  } catch (err) {
+    console.error("[discord] webhook error:", err);
   }
 }

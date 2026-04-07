@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Failed to save application" }, { status: 500 });
   }
 
-  notifyNewApplication(data as Application);
+  await notifyNewApplication(data as Application);
 
   return Response.json({ success: true, id: data.id }, { status: 201 });
 }
