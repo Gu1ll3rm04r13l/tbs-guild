@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { RefreshCw, Star, ExternalLink, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Star, CheckCircle2 } from "lucide-react";
 import { getClassColor } from "@/lib/utils";
 import type { SyncCharacter } from "@/app/api/profile/sync/route";
 
@@ -94,15 +93,6 @@ export function ProfileClient({ battleTag, guildRank, initialMainChar, initialAv
           )}
         </div>
 
-        {mainChar && (
-          <Link
-            href={`/armory/${encodeURIComponent(mainChar)}`}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-[#2a2318] bg-[#1a1710] px-3 py-2 text-xs text-[#b8a898] hover:text-[#f5efe8] hover:border-[#F0B830]/40 transition-colors"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Ver armería
-          </Link>
-        )}
       </div>
 
       {/* ── Sincronizar ── */}
@@ -183,14 +173,6 @@ export function ProfileClient({ battleTag, guildRank, initialMainChar, initialAv
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      href={`/armory/${encodeURIComponent(char.name)}`}
-                      className="text-xs text-[#6b5e50] hover:text-[#b8a898] transition-colors"
-                      title="Ver armería"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-
                     {isMain ? (
                       <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#F0B830]">
                         <CheckCircle2 className="h-3.5 w-3.5" />
