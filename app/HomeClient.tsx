@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Shield, BarChart2, Pencil, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -194,8 +193,24 @@ export function HomeClient({
             </div>
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button asChild size="lg"><Link href="/apply">{TR.hero.applyCta} <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild variant="outline" size="lg"><Link href="/roster">{TR.hero.rosterCta}</Link></Button>
+              <Button asChild size="lg">
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLSe1HLPW5qzVouZZMcPBifZrh18DWWECWEvqghZdNnYuHNvPFQ/viewform"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {TR.hero.applyCta} <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <a
+                  href="https://www.warcraftlogs.com/guild/us/ragnaros/the%20burning%20seagull"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {TR.hero.rosterCta}
+                </a>
+              </Button>
             </div>
           </div>
         </div>
